@@ -35,7 +35,7 @@ const client = new SiltumsApiClient();
 
 // ── MCP Server ──
 const server = new Server(
-  { name: 'mcp-siltums', version: '1.0.0' },
+  { name: 'mcp-sputnikx-market', version: '1.0.1' },
   { capabilities: { tools: {} } },
 );
 
