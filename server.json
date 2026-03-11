@@ -1,0 +1,52 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.sputnikx/mcp-siltums",
+  "version": "1.0.0",
+  "description": "EU trade analytics (28M+ Eurostat COMEXT records), product catalog, orders, and heating fuel calculator. 8 tools for AI agents.",
+  "repository": {
+    "url": "https://github.com/drivenbymyai-max/mcp-sputnikx-market",
+    "source": "https://github.com/drivenbymyai-max/mcp-sputnikx-market"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@sputnikx/mcp-siltums",
+      "version": "1.0.0",
+      "transport": ["stdio"]
+    }
+  ],
+  "tools": [
+    {
+      "name": "search_products",
+      "description": "Search in-stock products in the catalog with filters"
+    },
+    {
+      "name": "get_prices",
+      "description": "Get current product prices in EUR with price_per_kg"
+    },
+    {
+      "name": "check_availability",
+      "description": "Check product stock across warehouse locations"
+    },
+    {
+      "name": "calculator",
+      "description": "Calculate heating fuel needs from boiler specifications"
+    },
+    {
+      "name": "create_quote",
+      "description": "Create a draft quote with line items and 21% VAT"
+    },
+    {
+      "name": "place_order",
+      "description": "Place a product order with idempotency (max EUR 50,000)"
+    },
+    {
+      "name": "order_status",
+      "description": "Check order status by ID"
+    },
+    {
+      "name": "query_trade",
+      "description": "Query EU trade data — 9 types: overview, countries, timeline, top partners/products, balance, wood products, heatmap, product detail"
+    }
+  ]
+}

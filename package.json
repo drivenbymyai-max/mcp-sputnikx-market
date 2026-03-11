@@ -1,0 +1,53 @@
+{
+  "name": "@sputnikx/mcp-siltums",
+  "version": "1.0.0",
+  "description": "MCP server for Siltums Commerce API — EU trade analytics (28M+ records), product catalog, orders, and fuel calculator",
+  "type": "module",
+  "bin": {
+    "mcp-siltums": "./index.mjs"
+  },
+  "main": "./index.mjs",
+  "files": [
+    "index.mjs",
+    "api-client.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node index.mjs",
+    "test": "node --test test.mjs"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "eu-trade",
+    "eurostat",
+    "comext",
+    "commerce",
+    "api",
+    "ai-agent",
+    "claude",
+    "chatgpt",
+    "wood-products",
+    "heating",
+    "pellets",
+    "latvia",
+    "siltums"
+  ],
+  "author": "SputnikX <info@sputnikx.xyz>",
+  "license": "MIT",
+  "homepage": "https://sputnikx.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/drivenbymyai-max/mcp-sputnikx-market"
+  },
+  "bugs": {
+    "url": "https://github.com/sputnikx/mcp-siltums/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
