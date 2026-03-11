@@ -14,7 +14,7 @@
 const DEFAULT_URL = 'https://siltums.sputnikx.xyz';
 const DEFAULT_TIMEOUT = 30000;
 const MAX_TIMEOUT = 60000;
-const USER_AGENT = 'mcp-siltums/1.0.0';
+const USER_AGENT = 'mcp-sputnikx-market/1.0.2';
 
 // ── Sanitization ──
 

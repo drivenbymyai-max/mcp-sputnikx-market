@@ -35,7 +35,7 @@ const client = new SiltumsApiClient();
 
 // ── MCP Server ──
 const server = new Server(
-  { name: 'mcp-sputnikx-market', version: '1.0.1' },
+  { name: 'mcp-sputnikx-market', version: '1.0.2' },
   { capabilities: { tools: {} } },
 );
 
@@ -385,20 +385,33 @@ function errorResult(message) {
   };
 }
 
-// ── Start ──
+// ── Smithery sandbox (allows tool scanning without real credentials) ──
 
-async function main() {
-  if (!client.configured) {
-    console.error('[mcp-siltums] WARNING: SILTUMS_API_KEY not set. Agent endpoints will fail with 401.');
-    console.error('[mcp-siltums] Get your API key from: https://siltums.sputnikx.xyz/admin → Settings → API Keys');
-  }
-
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('[mcp-siltums] Server started (stdio transport)');
+export function createSandboxServer() {
+  return server;
 }
 
-main().catch((err) => {
-  console.error('[mcp-siltums] Fatal:', err.message);
-  process.exit(1);
-});
+// ── Start ──
+
+import { fileURLToPath } from 'node:url';
+let isCLI = false;
+try {
+  isCLI = process.argv[1] &&
+    fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file://${process.argv[1]}`));
+} catch { /* bundled as CJS (e.g. Smithery) — import.meta.url undefined, skip auto-start */ }
+
+if (isCLI) {
+  (async () => {
+    if (!client.configured) {
+      console.error('[mcp-siltums] WARNING: SILTUMS_API_KEY not set. Agent endpoints will fail with 401.');
+      console.error('[mcp-siltums] Get your API key from: https://siltums.sputnikx.xyz/admin → Settings → API Keys');
+    }
+
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error('[mcp-siltums] Server started (stdio transport)');
+  })().catch((err) => {
+    console.error('[mcp-siltums] Fatal:', err.message);
+    process.exit(1);
+  });
+}
