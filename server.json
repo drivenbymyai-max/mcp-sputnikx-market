@@ -10,7 +10,7 @@
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@sputnikx/mcp-siltums",
+      "identifier": "mcp-sputnikx-market",
       "version": "1.0.0",
       "transport": ["stdio"]
     }

@@ -1,5 +1,5 @@
 {
-  "name": "@sputnikx/mcp-siltums",
+  "name": "mcp-sputnikx-market",
   "version": "1.0.0",
   "description": "MCP server for Siltums Commerce API — EU trade analytics (28M+ records), product catalog, orders, and fuel calculator",
   "type": "module",

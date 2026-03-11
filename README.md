@@ -1,4 +1,4 @@
-# @sputnikx/mcp-siltums
+# mcp-sputnikx-market
 
 MCP server for the **Siltums Commerce API** — EU trade analytics, product catalog, orders, and heating fuel calculator.
 
@@ -20,7 +20,7 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "siltums": {
       "command": "npx",
-      "args": ["-y", "@sputnikx/mcp-siltums"],
+      "args": ["-y", "mcp-sputnikx-market"],
       "env": {
         "SILTUMS_API_KEY": "sk_live_your_key_here"
       }
@@ -32,7 +32,7 @@ Add to `claude_desktop_config.json`:
 ### Claude Code
 
 ```bash
-claude mcp add siltums -- npx -y @sputnikx/mcp-siltums
+claude mcp add siltums -- npx -y mcp-sputnikx-market
 ```
 
 Set your API key:
@@ -51,7 +51,7 @@ Add to MCP settings:
     "servers": {
       "siltums": {
         "command": "npx",
-        "args": ["-y", "@sputnikx/mcp-siltums"],
+        "args": ["-y", "mcp-sputnikx-market"],
         "env": {
           "SILTUMS_API_KEY": "sk_live_your_key_here"
         }

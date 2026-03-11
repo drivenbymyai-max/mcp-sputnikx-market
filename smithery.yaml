@@ -51,7 +51,7 @@ startCommand:
   commandFunction: |-
     (config) => ({
       command: 'npx',
-      args: ['-y', '@sputnikx/mcp-siltums'],
+      args: ['-y', 'mcp-sputnikx-market'],
       env: {
         SILTUMS_API_KEY: config.apiKey,
         ...(config.apiUrl && { SILTUMS_API_URL: config.apiUrl }),
