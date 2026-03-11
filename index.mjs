@@ -19,7 +19,8 @@
  *   SILTUMS_TENANT   — Tenant slug (default: siltums)
  *   SILTUMS_TIMEOUT  — Request timeout ms (default: 30000)
  *
- * Transport: stdio (stdin/stdout)
+ * Transport: stdio (default) or Streamable HTTP (set MCP_HTTP_PORT)
+ *   MCP_HTTP_PORT  — Enable HTTP transport on this port (e.g. 3100)
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -30,20 +31,31 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { SiltumsApiClient } from './api-client.mjs';
 
+const SERVER_NAME = 'mcp-sputnikx-market';
+const SERVER_VERSION = '1.0.2';
+
 // ── API Client singleton ──
 const client = new SiltumsApiClient();
 
-// ── MCP Server ──
-const server = new Server(
-  { name: 'mcp-sputnikx-market', version: '1.0.2' },
-  { capabilities: { tools: {} } },
-);
+/** Create a configured MCP Server instance with all tools registered */
+function createMcpServer() {
+  const srv = new Server(
+    { name: SERVER_NAME, version: SERVER_VERSION },
+    { capabilities: { tools: {} } },
+  );
+  registerTools(srv);
+  return srv;
+}
+
+// ── Primary server for stdio / sandbox ──
+const server = createMcpServer();
 
 // ══════════════════════════════════════════════════
-// TOOLS — Definitions
+// TOOLS — Definitions & Handlers
 // ══════════════════════════════════════════════════
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
+function registerTools(srv) {
+srv.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'search_products',
@@ -205,10 +217,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ],
 }));
 
-// ══════════════════════════════════════════════════
-// TOOLS — Handlers
-// ══════════════════════════════════════════════════
-
 /** Map query_trade types to REST API endpoints */
 const TRADE_ENDPOINTS = {
   overview: { path: 'trade/overview', params: [] },
@@ -222,7 +230,7 @@ const TRADE_ENDPOINTS = {
   product_detail: { path: 'trade/product-detail', params: ['reporter', 'hs2', 'years'] },
 };
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+srv.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args = {} } = request.params;
 
   try {
@@ -370,6 +378,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+} // end registerTools()
+
 // ── Helpers ──
 
 function textResult(data) {
@@ -391,25 +401,190 @@ export function createSandboxServer() {
   return server;
 }
 
+// ── HTTP Transport (Streamable HTTP) ──
+
+const MAX_SESSIONS = 100;
+const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const MAX_BODY_BYTES = 1024 * 1024;     // 1 MB
+const REAPER_INTERVAL_MS = 60 * 1000;   // 1 minute
+
+const CORS_ORIGIN = process.env.MCP_CORS_ORIGIN || '*';
+
+async function startHttpServer(port) {
+  const { createServer } = await import('node:http');
+  const { StreamableHTTPServerTransport } = await import(
+    '@modelcontextprotocol/sdk/server/streamableHttp.js'
+  );
+  const { randomUUID } = await import('node:crypto');
+
+  const sessions = new Map(); // sessionId → { server, transport, lastAccess }
+
+  // Session reaper — evict expired sessions every minute
+  const reaper = setInterval(() => {
+    const now = Date.now();
+    for (const [sid, session] of sessions) {
+      if (now - session.lastAccess > SESSION_TTL_MS) {
+        session.transport.close().catch(() => {});
+        sessions.delete(sid);
+      }
+    }
+  }, REAPER_INTERVAL_MS);
+  reaper.unref(); // don't prevent process exit
+
+  const httpServer = createServer(async (req, res) => {
+    // CORS headers for cross-origin MCP clients
+    res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id, Last-Event-ID');
+    res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    // Health check
+    if (req.url === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: 'ok',
+        server: SERVER_NAME,
+        version: SERVER_VERSION,
+        sessions: sessions.size,
+      }));
+      return;
+    }
+
+    // Only handle /mcp endpoint
+    if (req.url !== '/mcp') {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not found. Use /mcp for MCP protocol.' }));
+      return;
+    }
+
+    // Parse JSON body for POST requests with size limit
+    let body;
+    if (req.method === 'POST') {
+      try {
+        const chunks = [];
+        let totalBytes = 0;
+        for await (const chunk of req) {
+          totalBytes += chunk.length;
+          if (totalBytes > MAX_BODY_BYTES) {
+            res.writeHead(413, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Request body too large (max 1 MB)' }));
+            return;
+          }
+          chunks.push(chunk);
+        }
+        body = JSON.parse(Buffer.concat(chunks).toString());
+      } catch (e) {
+        if (!res.headersSent) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        }
+        return;
+      }
+    }
+
+    const sessionId = req.headers['mcp-session-id'];
+
+    // New session (initialize request)
+    if (req.method === 'POST' && !sessionId) {
+      // Enforce session cap
+      if (sessions.size >= MAX_SESSIONS) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Too many active sessions. Try again later.' }));
+        return;
+      }
+
+      const srv = createMcpServer();
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (sid) => {
+          sessions.set(sid, { server: srv, transport, lastAccess: Date.now() });
+        },
+      });
+
+      transport.onclose = () => {
+        const sid = transport.sessionId;
+        if (sid) sessions.delete(sid);
+      };
+
+      await srv.connect(transport);
+      await transport.handleRequest(req, res, body);
+      return;
+    }
+
+    // Existing session
+    if (sessionId) {
+      const session = sessions.get(sessionId);
+      if (!session) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Session not found' }));
+        return;
+      }
+      session.lastAccess = Date.now();
+      await session.transport.handleRequest(req, res, body);
+      return;
+    }
+
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Missing mcp-session-id header' }));
+  });
+
+  httpServer.listen(port, () => {
+    console.error(`[mcp-siltums] HTTP server listening on port ${port} (Streamable HTTP)`);
+    console.error(`[mcp-siltums] MCP endpoint: http://localhost:${port}/mcp`);
+    console.error(`[mcp-siltums] CORS origin: ${CORS_ORIGIN}`);
+  });
+
+  // Graceful shutdown
+  const cleanup = async () => {
+    clearInterval(reaper);
+    const results = await Promise.allSettled(
+      [...sessions.values()].map((s) => s.transport.close()),
+    );
+    for (const r of results) {
+      if (r.status === 'rejected') {
+        console.error('[mcp-siltums] Session close error:', r.reason?.message);
+      }
+    }
+    sessions.clear();
+    httpServer.close(() => process.exit(0));
+  };
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
+}
+
 // ── Start ──
 
 import { fileURLToPath } from 'node:url';
+
+// Detect if running as CLI entry point (vs imported as module by Smithery/bundler)
 let isCLI = false;
 try {
   isCLI = process.argv[1] &&
     fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file://${process.argv[1]}`));
 } catch { /* bundled as CJS (e.g. Smithery) — import.meta.url undefined, skip auto-start */ }
 
-if (isCLI) {
+// Also auto-start when MCP_HTTP_PORT is set (e.g. via PM2 ecosystem config)
+const httpPort = parseInt(process.env.MCP_HTTP_PORT, 10);
+if (isCLI || httpPort > 0) {
   (async () => {
     if (!client.configured) {
       console.error('[mcp-siltums] WARNING: SILTUMS_API_KEY not set. Agent endpoints will fail with 401.');
       console.error('[mcp-siltums] Get your API key from: https://siltums.sputnikx.xyz/admin → Settings → API Keys');
     }
 
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.error('[mcp-siltums] Server started (stdio transport)');
+    if (httpPort > 0) {
+      await startHttpServer(httpPort);
+    } else {
+      const transport = new StdioServerTransport();
+      await server.connect(transport);
+      console.error('[mcp-siltums] Server started (stdio transport)');
+    }
   })().catch((err) => {
     console.error('[mcp-siltums] Fatal:', err.message);
     process.exit(1);

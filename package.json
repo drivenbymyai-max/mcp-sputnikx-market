@@ -1,6 +1,6 @@
 {
   "name": "mcp-sputnikx-market",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "mcpName": "io.github.drivenbymyai-max/sputnikx-market",
   "description": "MCP server for Siltums Commerce API — EU trade analytics (28M+ records), product catalog, orders, and fuel calculator",
   "type": "module",

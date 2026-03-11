@@ -1,8 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.drivenbymyai-max/sputnikx-market",
-  "version": "1.0.1",
-  "description": "EU trade analytics (28M+ Eurostat COMEXT records), product catalog, orders, and heating fuel calculator. 8 tools for AI agents.",
+  "version": "1.0.2",
+  "description": "EU trade analytics, product catalog, orders, and heating fuel calculator for AI agents.",
   "repository": {
     "url": "https://github.com/drivenbymyai-max/mcp-sputnikx-market",
     "source": "github"
@@ -11,7 +11,7 @@
     {
       "registryType": "npm",
       "identifier": "mcp-sputnikx-market",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "transport": {
         "type": "stdio"
       },
