@@ -1,8 +1,8 @@
 # Smithery MCP Server Configuration
 # https://smithery.ai/docs/config
 
-name: mcp-siltums
-displayName: Siltums Commerce & EU Trade Analytics
+name: mcp-sputnikx-market
+displayName: SputnikX Commerce & EU Trade Analytics
 description: |
   Access EU trade data (28M+ Eurostat COMEXT records, 27 countries, 1988-2025),
   product catalog (heating pellets, wood products), real-time pricing,
@@ -12,7 +12,7 @@ author: SputnikX
 license: MIT
 homepage: https://sputnikx.xyz
 
-icon: https://siltums.sputnikx.xyz/img/logo-icon.png
+icon: https://sputnikx.xyz/img/logo-icon.png
 
 tags:
   - commerce
@@ -32,12 +32,12 @@ startCommand:
       apiKey:
         type: string
         title: API Key
-        description: "Siltums API key (sk_live_...)"
+        description: "SputnikX API key (sk_live_...)"
       apiUrl:
         type: string
         title: API URL
-        description: "Base URL (default: https://siltums.sputnikx.xyz)"
-        default: "https://siltums.sputnikx.xyz"
+        description: "Base URL (default: https://sputnikx.xyz)"
+        default: "https://sputnikx.xyz"
       tenant:
         type: string
         title: Tenant
@@ -53,8 +53,8 @@ startCommand:
       command: 'npx',
       args: ['-y', 'mcp-sputnikx-market'],
       env: {
-        SILTUMS_API_KEY: config.apiKey,
-        ...(config.apiUrl && { SILTUMS_API_URL: config.apiUrl }),
-        ...(config.tenant && { SILTUMS_TENANT: config.tenant }),
+        SPUTNIKX_API_KEY: config.apiKey,
+        ...(config.apiUrl && { SPUTNIKX_API_URL: config.apiUrl }),
+        ...(config.tenant && { SPUTNIKX_TENANT: config.tenant }),
       },
     })

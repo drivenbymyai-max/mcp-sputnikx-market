@@ -1,11 +1,11 @@
 {
   "name": "mcp-sputnikx-market",
-  "version": "1.0.2",
-  "mcpName": "io.github.drivenbymyai-max/sputnikx-market",
-  "description": "MCP server for Siltums Commerce API — EU trade analytics (28M+ records), product catalog, orders, and fuel calculator",
+  "version": "1.2.0",
+  "mcpName": "xyz.sputnikx/market",
+  "description": "MCP server for SputnikX Commerce API — EU trade + customs analytics, CRM agent skills, product catalog, orders",
   "type": "module",
   "bin": {
-    "mcp-siltums": "./index.mjs"
+    "mcp-sputnikx": "./index.mjs"
   },
   "main": "./index.mjs",
   "files": [
@@ -24,6 +24,8 @@
     "eu-trade",
     "eurostat",
     "comext",
+    "customs",
+    "crm",
     "commerce",
     "api",
     "ai-agent",
@@ -33,7 +35,7 @@
     "heating",
     "pellets",
     "latvia",
-    "siltums"
+    "sputnikx"
   ],
   "author": "SputnikX <info@sputnikx.xyz>",
   "license": "MIT",

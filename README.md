@@ -1,6 +1,6 @@
 # mcp-sputnikx-market
 
-MCP server for the **Siltums Commerce API** — EU trade analytics, product catalog, orders, and heating fuel calculator.
+MCP server for the **SputnikX Commerce API** — EU trade analytics, product catalog, orders, and heating fuel calculator.
 
 ## Data
 
@@ -18,11 +18,11 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "siltums": {
+    "sputnikx": {
       "command": "npx",
       "args": ["-y", "mcp-sputnikx-market"],
       "env": {
-        "SILTUMS_API_KEY": "sk_live_your_key_here"
+        "SPUTNIKX_API_KEY": "sk_live_your_key_here"
       }
     }
   }
@@ -32,13 +32,13 @@ Add to `claude_desktop_config.json`:
 ### Claude Code
 
 ```bash
-claude mcp add siltums -- npx -y mcp-sputnikx-market
+claude mcp add sputnikx -- npx -y mcp-sputnikx-market
 ```
 
 Set your API key:
 
 ```bash
-export SILTUMS_API_KEY=sk_live_your_key_here
+export SPUTNIKX_API_KEY=sk_live_your_key_here
 ```
 
 ### Cursor / VS Code
@@ -49,11 +49,11 @@ Add to MCP settings:
 {
   "mcp": {
     "servers": {
-      "siltums": {
+      "sputnikx": {
         "command": "npx",
         "args": ["-y", "mcp-sputnikx-market"],
         "env": {
-          "SILTUMS_API_KEY": "sk_live_your_key_here"
+          "SPUTNIKX_API_KEY": "sk_live_your_key_here"
         }
       }
     }
@@ -92,10 +92,10 @@ Add to MCP settings:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `SILTUMS_API_KEY` | Yes | — | API key (get from admin panel) |
-| `SILTUMS_API_URL` | No | `https://siltums.sputnikx.xyz` | API base URL |
-| `SILTUMS_TENANT` | No | `siltums` | Tenant: `siltums` or `woodpoint` |
-| `SILTUMS_TIMEOUT` | No | `30000` | Request timeout (ms) |
+| `SPUTNIKX_API_KEY` | Yes | — | API key (get from admin panel) |
+| `SPUTNIKX_API_URL` | No | `https://sputnikx.xyz` | API base URL |
+| `SPUTNIKX_TENANT` | No | `siltums` | Tenant: `siltums` or `woodpoint` |
+| `SPUTNIKX_TIMEOUT` | No | `30000` | Request timeout (ms) |
 
 ## API Key Scopes
 
@@ -127,9 +127,9 @@ Ask your AI assistant:
 
 ## Links
 
-- [OpenAPI Spec](https://siltums.sputnikx.xyz/api/openapi.json)
-- [Agent Discovery](https://siltums.sputnikx.xyz/.well-known/agent-card.json)
-- [LLM Documentation](https://siltums.sputnikx.xyz/llms.txt)
+- [OpenAPI Spec](https://sputnikx.xyz/api/openapi.json)
+- [Agent Discovery](https://sputnikx.xyz/.well-known/agent-card.json)
+- [LLM Documentation](https://sputnikx.xyz/llms.txt)
 - [SputnikX](https://sputnikx.xyz)
 
 ## License

@@ -1,20 +1,20 @@
 /**
- * Siltums Commerce API Client — Thin REST wrapper for MCP server
+ * SputnikX Commerce API Client — Thin REST wrapper for MCP server
  *
- * Calls the live Siltums API over HTTPS. No local database access.
+ * Calls the live SputnikX API over HTTPS. No local database access.
  * Authentication via Bearer token (API key from admin panel).
  *
  * Environment:
- *   SILTUMS_API_KEY  — API key (required for agent endpoints)
- *   SILTUMS_API_URL  — Base URL (default: https://siltums.sputnikx.xyz)
- *   SILTUMS_TENANT   — Tenant slug for x-tenant-slug header (default: siltums)
- *   SILTUMS_TIMEOUT  — Request timeout in ms (default: 30000)
+ *   SPUTNIKX_API_KEY  — API key (required for agent endpoints)
+ *   SPUTNIKX_API_URL  — Base URL (default: https://sputnikx.xyz)
+ *   SPUTNIKX_TENANT   — Tenant slug for x-tenant-slug header (default: siltums)
+ *   SPUTNIKX_TIMEOUT  — Request timeout in ms (default: 30000)
  */
 
-const DEFAULT_URL = 'https://siltums.sputnikx.xyz';
+const DEFAULT_URL = 'https://sputnikx.xyz';
 const DEFAULT_TIMEOUT = 30000;
 const MAX_TIMEOUT = 60000;
-const USER_AGENT = 'mcp-sputnikx-market/1.0.2';
+const USER_AGENT = 'mcp-sputnikx-market/1.1.0';
 
 // ── Sanitization ──
 
@@ -44,17 +44,17 @@ function sanitizeTenant(raw) {
 
 // ── Client ──
 
-export class SiltumsApiClient {
+export class SputnikXClient {
   #baseUrl;
   #apiKey;
   #tenant;
   #timeout;
 
   constructor(opts = {}) {
-    this.#baseUrl = sanitizeUrl(opts.baseUrl || process.env.SILTUMS_API_URL);
-    this.#apiKey = opts.apiKey || process.env.SILTUMS_API_KEY || '';
-    this.#tenant = sanitizeTenant(opts.tenant || process.env.SILTUMS_TENANT);
-    this.#timeout = sanitizeTimeout(opts.timeout || process.env.SILTUMS_TIMEOUT);
+    this.#baseUrl = sanitizeUrl(opts.baseUrl || process.env.SPUTNIKX_API_URL);
+    this.#apiKey = opts.apiKey || process.env.SPUTNIKX_API_KEY || '';
+    this.#tenant = sanitizeTenant(opts.tenant || process.env.SPUTNIKX_TENANT);
+    this.#timeout = sanitizeTimeout(opts.timeout || process.env.SPUTNIKX_TIMEOUT);
   }
 
   get configured() {

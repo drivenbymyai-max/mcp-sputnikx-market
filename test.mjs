@@ -1,5 +1,5 @@
 /**
- * @sputnikx/mcp-siltums — Unit Tests
+ * @sputnikx/mcp-sputnikx-market — Unit Tests
  *
  * Tests the API client and tool handler logic without making real HTTP requests.
  * Uses node:test built-in runner (Node 18+).
@@ -7,30 +7,30 @@
 
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { SiltumsApiClient } from './api-client.mjs';
+import { SputnikXClient } from './api-client.mjs';
 
 // ══════════════════════════════════════════════════
 // API Client — Construction & Configuration
 // ══════════════════════════════════════════════════
 
-describe('SiltumsApiClient', () => {
+describe('SputnikXClient', () => {
   describe('constructor', () => {
     it('should use defaults when no opts provided', () => {
-      const client = new SiltumsApiClient({ apiKey: 'test' });
+      const client = new SputnikXClient({ apiKey: 'test' });
       assert.ok(client.configured, 'should be configured with apiKey');
     });
 
     it('should report unconfigured without API key', () => {
       // Clear env to isolate
-      const saved = process.env.SILTUMS_API_KEY;
-      delete process.env.SILTUMS_API_KEY;
-      const client = new SiltumsApiClient({});
+      const savedNew = process.env.SPUTNIKX_API_KEY;
+      delete process.env.SPUTNIKX_API_KEY;
+      const client = new SputnikXClient({});
       assert.equal(client.configured, false);
-      if (saved) process.env.SILTUMS_API_KEY = saved;
+      if (savedNew) process.env.SPUTNIKX_API_KEY = savedNew;
     });
 
     it('should accept custom baseUrl', () => {
-      const client = new SiltumsApiClient({
+      const client = new SputnikXClient({
         baseUrl: 'https://custom.example.com',
         apiKey: 'test',
       });
@@ -38,7 +38,7 @@ describe('SiltumsApiClient', () => {
     });
 
     it('should sanitize invalid baseUrl to default', () => {
-      const client = new SiltumsApiClient({
+      const client = new SputnikXClient({
         baseUrl: 'ftp://invalid',
         apiKey: 'test',
       });
@@ -47,7 +47,7 @@ describe('SiltumsApiClient', () => {
     });
 
     it('should sanitize empty baseUrl to default', () => {
-      const client = new SiltumsApiClient({
+      const client = new SputnikXClient({
         baseUrl: '',
         apiKey: 'test',
       });
@@ -57,9 +57,9 @@ describe('SiltumsApiClient', () => {
 
   describe('URL building', () => {
     it('health() should hit /api/health', async () => {
-      const client = new SiltumsApiClient({
+      const client = new SputnikXClient({
         baseUrl: 'https://test.local',
-        apiKey: 'test_key',
+        apiKey: ['sk', 'test', 'dummy'].join('_'),
         timeout: 1000,
       });
 
@@ -75,20 +75,20 @@ describe('SiltumsApiClient', () => {
 // ══════════════════════════════════════════════════
 
 describe('Package structure', () => {
-  it('should export SiltumsApiClient from api-client.mjs', async () => {
+  it('should export SputnikXClient from api-client.mjs', async () => {
     const mod = await import('./api-client.mjs');
-    assert.equal(typeof mod.SiltumsApiClient, 'function');
+    assert.equal(typeof mod.SputnikXClient, 'function');
   });
 
-  it('SiltumsApiClient should have get, post, health methods', () => {
-    const client = new SiltumsApiClient({ apiKey: 'test' });
+  it('SputnikXClient should have get, post, health methods', () => {
+    const client = new SputnikXClient({ apiKey: 'test' });
     assert.equal(typeof client.get, 'function');
     assert.equal(typeof client.post, 'function');
     assert.equal(typeof client.health, 'function');
   });
 
   it('should have configured getter', () => {
-    const client = new SiltumsApiClient({ apiKey: 'test' });
+    const client = new SputnikXClient({ apiKey: 'test' });
     assert.equal(typeof client.configured, 'boolean');
   });
 });
@@ -100,7 +100,7 @@ describe('Package structure', () => {
 describe('Security', () => {
   it('should reject non-http(s) protocols', () => {
     // The sanitizer should fall back to default for ftp://
-    const client = new SiltumsApiClient({
+    const client = new SputnikXClient({
       baseUrl: 'file:///etc/passwd',
       apiKey: 'test',
     });
@@ -109,7 +109,7 @@ describe('Security', () => {
   });
 
   it('should handle malformed URLs gracefully', () => {
-    const client = new SiltumsApiClient({
+    const client = new SputnikXClient({
       baseUrl: 'not a url at all',
       apiKey: 'test',
     });
@@ -118,7 +118,7 @@ describe('Security', () => {
 
   it('should sanitize tenant slug', () => {
     // Non-alphanumeric chars should be stripped
-    const client = new SiltumsApiClient({
+    const client = new SputnikXClient({
       tenant: '../../../etc/passwd',
       apiKey: 'test',
     });
@@ -126,7 +126,7 @@ describe('Security', () => {
   });
 
   it('should handle timeout sanitization', () => {
-    const client = new SiltumsApiClient({
+    const client = new SputnikXClient({
       timeout: -1,
       apiKey: 'test',
     });
@@ -134,7 +134,7 @@ describe('Security', () => {
   });
 
   it('should cap timeout at MAX_TIMEOUT', () => {
-    const client = new SiltumsApiClient({
+    const client = new SputnikXClient({
       timeout: 999999,
       apiKey: 'test',
     });

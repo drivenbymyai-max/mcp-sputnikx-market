@@ -1,8 +1,10 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.drivenbymyai-max/sputnikx-market",
-  "version": "1.0.2",
-  "description": "EU trade analytics, product catalog, orders, and heating fuel calculator for AI agents.",
+  "name": "xyz.sputnikx/market",
+  "title": "SputnikX Commerce & EU Trade Analytics",
+  "version": "1.2.0",
+  "description": "EU trade & customs analytics, product catalog, CRM agents, provably fair RNG. x402.",
+  "websiteUrl": "https://sputnikx.xyz",
   "repository": {
     "url": "https://github.com/drivenbymyai-max/mcp-sputnikx-market",
     "source": "github"
@@ -11,53 +13,51 @@
     {
       "registryType": "npm",
       "identifier": "mcp-sputnikx-market",
-      "version": "1.0.2",
+      "version": "1.2.0",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
-          "description": "Siltums API key for authentication (obtain from admin panel)",
+          "name": "SPUTNIKX_API_KEY",
+          "description": "SputnikX API key for authentication (obtain from admin panel at sputnikx.xyz/admin)",
           "isRequired": true,
-          "format": "string",
-          "isSecret": true,
-          "name": "SILTUMS_API_KEY"
+          "isSecret": true
+        },
+        {
+          "name": "SPUTNIKX_TENANT",
+          "description": "Tenant slug: siltums (heating) or woodpoint (wood B2B)",
+          "isRequired": false,
+          "default": "siltums"
+        },
+        {
+          "name": "SPUTNIKX_API_URL",
+          "description": "API base URL",
+          "isRequired": false,
+          "default": "https://sputnikx.xyz"
         }
       ]
     }
   ],
-  "tools": [
+  "remotes": [
     {
-      "name": "search_products",
-      "description": "Search in-stock products in the catalog with filters"
-    },
-    {
-      "name": "get_prices",
-      "description": "Get current product prices in EUR with price_per_kg"
-    },
-    {
-      "name": "check_availability",
-      "description": "Check product stock across warehouse locations"
-    },
-    {
-      "name": "calculator",
-      "description": "Calculate heating fuel needs from boiler specifications"
-    },
-    {
-      "name": "create_quote",
-      "description": "Create a draft quote with line items and 21% VAT"
-    },
-    {
-      "name": "place_order",
-      "description": "Place a product order with idempotency (max EUR 50,000)"
-    },
-    {
-      "name": "order_status",
-      "description": "Check order status by ID"
-    },
-    {
-      "name": "query_trade",
-      "description": "Query EU trade data — 9 types: overview, countries, timeline, top partners/products, balance, wood products, heatmap, product detail"
+      "type": "streamable-http",
+      "url": "https://sputnikx.xyz/mcp"
     }
+  ],
+  "tools": [
+    { "name": "search_products", "description": "Search in-stock products in the catalog with filters" },
+    { "name": "get_prices", "description": "Get current product prices in EUR with price_per_kg" },
+    { "name": "check_availability", "description": "Check product stock across warehouse locations" },
+    { "name": "calculator", "description": "Calculate heating fuel needs from boiler specifications" },
+    { "name": "create_quote", "description": "Create a draft quote with line items and 21% VAT" },
+    { "name": "place_order", "description": "Place a product order with idempotency (max EUR 50,000)" },
+    { "name": "order_status", "description": "Check order status by ID" },
+    { "name": "query_trade", "description": "Query EU trade data (28M+ Eurostat COMEXT records) — 9 types: overview, countries, timeline, top partners/products, balance, wood products, heatmap, product detail" },
+    { "name": "query_customs", "description": "Query Latvia customs analytics (3.8GB) — 6 types: classifications, trends, top commodities, country analysis, tariff lookup, seasonal patterns" },
+    { "name": "list_skills", "description": "List available CRM agent skills with pricing and example tasks" },
+    { "name": "run_skill", "description": "Execute CRM agent skill (oracle, spider, tracker, diplomat, sniper, strategist, finansist, gramatvedis)" },
+    { "name": "rng_roll", "description": "Generate provably fair random number (dice, coin, range, float, shuffle, pick)" },
+    { "name": "rng_verify", "description": "Verify a previous roll's fairness using HMAC-SHA256" }
   ]
 }

@@ -2,15 +2,15 @@
 
 /**
  * Smoke test — verify MCP package works against live API.
- * Usage: SILTUMS_API_KEY=sk_live_xxx node smoke-test.mjs
+ * Usage: SPUTNIKX_API_KEY=sk_live_xxx node smoke-test.mjs
  *        or: node smoke-test.mjs (uses localhost:3000, no auth for health)
  */
 
-import { SiltumsApiClient } from './api-client.mjs';
+import { SputnikXClient } from './api-client.mjs';
 
-const client = new SiltumsApiClient({
-  baseUrl: process.env.SILTUMS_API_URL || 'http://localhost:3000',
-  apiKey: process.env.SILTUMS_API_KEY || '',
+const client = new SputnikXClient({
+  baseUrl: process.env.SPUTNIKX_API_URL || 'http://localhost:3000',
+  apiKey: process.env.SPUTNIKX_API_KEY || '',
   tenant: 'siltums',
 });
 
@@ -28,7 +28,7 @@ async function test(name, fn) {
   }
 }
 
-console.log('Smoke testing against:', process.env.SILTUMS_API_URL || 'http://localhost:3000');
+console.log('Smoke testing against:', process.env.SPUTNIKX_API_URL || 'http://localhost:3000');
 console.log('API key:', client.configured ? 'configured' : 'NOT SET (some tests will fail)');
 console.log('');
 
@@ -90,6 +90,33 @@ if (client.configured) {
     const data = await client.get('trade/top-partners', { reporter: 'LV', year: '2024', flow: 'EXPORT' });
     if (!data.success) throw new Error('Expected success=true');
     console.log(`       → ${data.total} partners for LV exports 2024`);
+  });
+
+  // Customs Analytics
+  await test('GET customs/classifications', async () => {
+    const data = await client.get('customs/classifications', { q: 'wood' });
+    if (!data.success) throw new Error('Expected success=true');
+    console.log(`       → ${data.total} classifications for "wood"`);
+  });
+
+  await test('GET customs/trends', async () => {
+    const data = await client.get('customs/trends', { years: '2022-2025' });
+    if (!data.success) throw new Error('Expected success=true');
+    console.log(`       → ${data.total} trend records`);
+  });
+
+  await test('GET customs/top-commodities', async () => {
+    const data = await client.get('customs/top-commodities', { year: '2024', direction: 'IMPORT', limit: '5' });
+    if (!data.success) throw new Error('Expected success=true');
+    console.log(`       → ${data.total} top commodities`);
+  });
+
+  // Skills
+  await test('GET skills/catalog', async () => {
+    const data = await client.get('skills/catalog');
+    if (!data.success) throw new Error('Expected success=true');
+    if (!data.total || data.total < 1) throw new Error('Expected at least 1 skill');
+    console.log(`       → ${data.total} skills available`);
   });
 } else {
   console.log('  SKIP agent endpoints (no API key)');
