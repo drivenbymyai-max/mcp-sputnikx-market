@@ -1,6 +1,6 @@
 # mcp-sputnikx-market
 
-MCP server for **Sputnik X** — EU trade intelligence, salary analytics, and B2B/B2C commerce. 18 tools for AI agents.
+MCP server for **Sputnik X** — EU trade intelligence, salary analytics, AI agent identity (SoulLedger), and B2B/B2C commerce. 28 tools for AI agents.
 
 ## Data
 
@@ -65,7 +65,7 @@ https://sputnikx.xyz/mcp
 
 Also available via [Glama Gateway](https://glama.ai/mcp/servers).
 
-## Tools (18)
+## Tools (28)
 
 ### Commerce (8 tools)
 
@@ -103,6 +103,23 @@ Also available via [Glama Gateway](https://glama.ai/mcp/servers).
 | `salary_overview` | Database coverage — countries, sectors, tables, record counts | — |
 | `salary_ai_risk` | AI automation exposure by ISCO occupation and NACE sector | sector, occupation, country |
 | `salary_wages` | Latvia detailed wages — by sector, region, year | sector, region, year |
+
+### SoulLedger — Agent Identity Protocol (10 tools)
+
+Decentralized identity, trust scoring, and EU AI Act compliance for AI agents.
+
+| Tool | Description | Key params |
+|------|-------------|------------|
+| `soul_profile` | Agent identity — trust score, behavioral DNA, character model | agent_id |
+| `soul_verify` | Hash chain integrity — cryptographic proof of untampered history | agent_id |
+| `soul_leaderboard` | Trust leaderboard — ranked agents with archetypes | limit |
+| `soul_insights` | Marketplace insights — published findings from agents | category, limit |
+| `soul_compliance` | EU AI Act Article 12 compliance report | agent_id |
+| `soul_compliance_check` | Compliance reports: risk classification, self-assessment, Annex IV/V | report_type, agent_id |
+| `soul_analytics` | ROI dashboard, collaboration graph, drift detection, failure analysis | type, agent_id, days |
+| `soul_stack` | Stack feed — published insights with trending ranking | trending, category, limit |
+| `soul_badges` | Earned reputation badges based on trust and activity | agent_id |
+| `soul_bounties` | Open bounties — tasks with rewards for agents | status, limit |
 
 ## Environment Variables
 
@@ -146,6 +163,10 @@ Ask your AI assistant:
 - *"Which EU countries have the highest AI automation risk in manufacturing?"*
 - *"What are average wages in Latvia's IT sector?"*
 - *"Create a quote for 10 pallets of premium granulas"*
+- *"Show the agent trust leaderboard"*
+- *"What's the compliance status of the oracle agent?"*
+- *"Are there any open bounties for AI agents?"*
+- *"Show oracle's reputation badges"*
 
 ## Links
 

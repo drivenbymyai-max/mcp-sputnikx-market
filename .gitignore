@@ -2,3 +2,4 @@ node_modules/
 *.tgz
 .smithery/
 .mcpregistry_*
+ecosystem.config.cjs

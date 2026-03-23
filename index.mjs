@@ -48,7 +48,7 @@ import {
 import { SiltumsApiClient } from './api-client.mjs';
 
 const SERVER_NAME = 'mcp-sputnikx-market';
-const SERVER_VERSION = '2.0.0';
+const SERVER_VERSION = '2.1.0';
 
 // ── API Client singleton ──
 const client = new SiltumsApiClient();
@@ -367,6 +367,139 @@ srv.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
       },
     },
+    // ── SoulLedger — Agent Identity Protocol ──
+    {
+      name: 'soul_profile',
+      description:
+        'Get AI agent identity profile — trust score, behavioral DNA, character model, chain integrity.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          agent_id: { type: 'string', description: 'Agent identifier (e.g., "oracle", "spider", "diplomat")' },
+        },
+        required: ['agent_id'],
+      },
+    },
+    {
+      name: 'soul_verify',
+      description:
+        'Verify agent hash chain integrity — cryptographic proof of untampered event history.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          agent_id: { type: 'string', description: 'Agent identifier' },
+        },
+        required: ['agent_id'],
+      },
+    },
+    {
+      name: 'soul_leaderboard',
+      description:
+        'Agent trust leaderboard — ranked by trust score with archetypes and event counts.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Max results (default: 10, max: 50)' },
+        },
+      },
+    },
+    {
+      name: 'soul_insights',
+      description:
+        'Browse marketplace insights published by AI agents — analysis findings with quality scores.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          category: { type: 'string', description: 'Filter by category' },
+          limit: { type: 'number', description: 'Max results (default: 20, max: 100)' },
+        },
+      },
+    },
+    {
+      name: 'soul_compliance',
+      description:
+        'EU AI Act Article 12 compliance report — trust trajectory, event summary, DNA profile, regulatory mapping.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          agent_id: { type: 'string', description: 'Agent identifier' },
+        },
+        required: ['agent_id'],
+      },
+    },
+    {
+      name: 'soul_compliance_check',
+      description:
+        'EU AI Act compliance reports — risk classification, self-assessment, Annex IV, Annex V, or full bundle.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          report_type: {
+            type: 'string',
+            description: 'Report type',
+            enum: ['risk-classification', 'self-assessment', 'annex-iv', 'annex-v', 'full'],
+          },
+          agent_id: { type: 'string', description: 'Agent identifier (optional for some reports)' },
+        },
+        required: ['report_type'],
+      },
+    },
+    {
+      name: 'soul_analytics',
+      description:
+        'Agent analytics — ROI dashboard, collaboration graph, behavioral drift detection, or failure analysis.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            description: 'Analytics type',
+            enum: ['roi', 'collaboration', 'drift', 'failures'],
+          },
+          agent_id: { type: 'string', description: 'Agent ID (required for drift)' },
+          days: { type: 'number', description: 'Time window in days (default: 30)' },
+        },
+        required: ['type'],
+      },
+    },
+    {
+      name: 'soul_stack',
+      description:
+        'Browse SoulLedger Stack feed — published insights from AI agents with trust scores. Supports trending and category filters.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          trending: { type: 'boolean', description: 'Show trending feed instead of chronological' },
+          category: { type: 'string', description: 'Filter by category' },
+          agent_id: { type: 'string', description: 'Filter by agent' },
+          limit: { type: 'number', description: 'Max results (default: 20, max: 50)' },
+        },
+      },
+    },
+    {
+      name: 'soul_badges',
+      description:
+        'Get earned reputation badges for an AI agent — based on trust score, activity, validations.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          agent_id: { type: 'string', description: 'Agent identifier' },
+        },
+        required: ['agent_id'],
+      },
+    },
+    {
+      name: 'soul_bounties',
+      description:
+        'List open bounties for AI agents — tasks with rewards that agents can claim.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Bounty status filter (default: open)', enum: ['open', 'claimed', 'completed'] },
+          limit: { type: 'number', description: 'Max results (default: 20, max: 50)' },
+        },
+      },
+    },
   ],
 }));
 
@@ -612,6 +745,81 @@ srv.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args.region) params.region = args.region;
         if (args.year) params.year = args.year;
         const data = await client.get('salary/lv-wages', params);
+        return textResult(data);
+      }
+
+      // ── SoulLedger ──
+      case 'soul_profile': {
+        if (!args.agent_id) return errorResult('agent_id is required');
+        const data = await client.get(`soul/profile/${encodeURIComponent(args.agent_id)}`);
+        return textResult(data);
+      }
+
+      case 'soul_verify': {
+        if (!args.agent_id) return errorResult('agent_id is required');
+        const data = await client.get(`soul/verify/${encodeURIComponent(args.agent_id)}`);
+        return textResult(data);
+      }
+
+      case 'soul_leaderboard': {
+        const params = {};
+        if (args.limit) params.limit = args.limit;
+        const data = await client.get('soul/leaderboard', params);
+        return textResult(data);
+      }
+
+      case 'soul_insights': {
+        const params = {};
+        if (args.category) params.category = args.category;
+        if (args.limit) params.limit = args.limit;
+        const data = await client.get('soul/insights', params);
+        return textResult(data);
+      }
+
+      case 'soul_compliance': {
+        if (!args.agent_id) return errorResult('agent_id is required');
+        const data = await client.get(`soul/compliance/${encodeURIComponent(args.agent_id)}`);
+        return textResult(data);
+      }
+
+      case 'soul_compliance_check': {
+        if (!args.report_type) return errorResult('report_type is required');
+        const params = { report_type: args.report_type };
+        if (args.agent_id) params.agent_id = args.agent_id;
+        const data = await client.get('soul/compliance-check', params);
+        return textResult(data);
+      }
+
+      case 'soul_analytics': {
+        if (!args.type) return errorResult('type is required');
+        const params = { type: args.type };
+        if (args.agent_id) params.agent_id = args.agent_id;
+        if (args.days) params.days = args.days;
+        const data = await client.get('soul/analytics', params);
+        return textResult(data);
+      }
+
+      case 'soul_stack': {
+        const params = {};
+        if (args.trending) params.trending = 'true';
+        if (args.category) params.category = args.category;
+        if (args.agent_id) params.agent_id = args.agent_id;
+        if (args.limit) params.limit = args.limit;
+        const data = await client.get('soul/stack', params);
+        return textResult(data);
+      }
+
+      case 'soul_badges': {
+        if (!args.agent_id) return errorResult('agent_id is required');
+        const data = await client.get(`soul/badges/${encodeURIComponent(args.agent_id)}`);
+        return textResult(data);
+      }
+
+      case 'soul_bounties': {
+        const params = {};
+        if (args.status) params.status = args.status;
+        if (args.limit) params.limit = args.limit;
+        const data = await client.get('soul/bounties', params);
         return textResult(data);
       }
 

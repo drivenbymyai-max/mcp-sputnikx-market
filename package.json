@@ -1,8 +1,8 @@
 {
   "name": "mcp-sputnikx-market",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "mcpName": "xyz.sputnikx/market",
-  "description": "Sputnik X MCP Server \u2014 18 AI agent tools: EU trade analytics (28M+ records, 7 query types + price/seasonality/concentration/corridor/forecast/alerts/macro), EU salary intelligence (3 tools), commerce (8 tools: products, prices, stock, quotes, orders, calculator)",
+  "description": "Sputnik X MCP Server \u2014 28 AI agent tools: EU trade analytics (28M+ records), salary intelligence, commerce, SoulLedger agent identity (trust, DNA, compliance, badges, bounties)",
   "type": "module",
   "bin": {
     "mcp-sputnikx": "./index.mjs"
