@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * @sputnikx/mcp-sputnikx-market — MCP Server for SputnikX Commerce API
+ * @sputnikx/mcp-siltums — MCP Server for Siltums Commerce API
  *
- * 11 tools for AI agents:
+ * 18 tools for AI agents:
+ *
+ * Commerce:
  *   search_products    — Product catalog with filters
  *   get_prices         — Real-time EUR pricing
  *   check_availability — Stock by warehouse location
@@ -11,16 +13,27 @@
  *   place_order        — Order with idempotency (max EUR 50,000)
  *   order_status       — Order tracking
  *   calculator         — Heating fuel calculator
- *   query_trade        — EU trade analytics (28M+ Eurostat COMEXT records)
- *   query_customs      — Latvia customs analytics (3.8GB, KN8 codes, trends, seasonal)
- *   list_skills        — Available CRM agent skills catalog
- *   run_skill          — Execute CRM agent skill (oracle, spider, etc.)
+ *
+ * EU Trade Analytics (28M+ Eurostat COMEXT records):
+ *   query_trade        — Multi-query: overview, countries, timeline, partners, products, balance, heatmap
+ *   trade_price        — Price per tonne for any HS product/country/year
+ *   trade_seasonality  — Monthly import/export patterns
+ *   trade_concentration — Market concentration (HHI) analysis
+ *   trade_corridor     — Bilateral trade corridor deep-dive
+ *   trade_forecast     — Simple trend forecast
+ *   trade_alerts       — Anomaly detection (spikes/drops)
+ *   trade_macro        — Macro context (GDP, population, trade openness)
+ *
+ * EU Salary Intelligence:
+ *   salary_overview    — Coverage, sectors, countries available
+ *   salary_ai_risk     — AI automation exposure by occupation/sector
+ *   salary_wages       — Latvia detailed wage data
  *
  * Environment:
- *   SPUTNIKX_API_KEY  — API key (required, obtain from admin panel)
- *   SPUTNIKX_API_URL  — Base URL (default: https://sputnikx.xyz)
- *   SPUTNIKX_TENANT   — Tenant slug (default: siltums)
- *   SPUTNIKX_TIMEOUT  — Request timeout ms (default: 30000)
+ *   SILTUMS_API_KEY  — API key (required, obtain from admin panel)
+ *   SILTUMS_API_URL  — Base URL (default: https://siltums.sputnikx.xyz)
+ *   SILTUMS_TENANT   — Tenant slug (default: siltums)
+ *   SILTUMS_TIMEOUT  — Request timeout ms (default: 30000)
  *
  * Transport: stdio (default) or Streamable HTTP (set MCP_HTTP_PORT)
  *   MCP_HTTP_PORT  — Enable HTTP transport on this port (e.g. 3100)
@@ -32,13 +45,13 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { SputnikXClient } from './api-client.mjs';
+import { SiltumsApiClient } from './api-client.mjs';
 
 const SERVER_NAME = 'mcp-sputnikx-market';
-const SERVER_VERSION = '1.1.0';
+const SERVER_VERSION = '2.0.0';
 
 // ── API Client singleton ──
-const client = new SputnikXClient();
+const client = new SiltumsApiClient();
 
 /** Create a configured MCP Server instance with all tools registered */
 function createMcpServer() {
@@ -133,14 +146,14 @@ srv.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: 'place_order',
       description:
-        'Place a product order. You MUST provide product_id or product_slug (at least one). ' +
+        'Place a product order. Requires product_id or product_slug (at least one). ' +
         'Enforces EUR 50,000 max limit. Supports idempotency_key to prevent duplicates. ' +
         'Requires "order" scope API key.',
       inputSchema: {
         type: 'object',
         properties: {
-          product_id: { type: 'number', description: 'Product ID (required if no product_slug)' },
-          product_slug: { type: 'string', description: 'Product slug (required if no product_id)' },
+          product_id: { type: 'number', description: 'Product ID' },
+          product_slug: { type: 'string', description: 'Product slug (alternative to product_id)' },
           quantity: { type: 'number', description: 'Quantity (required, > 0)' },
           unit: { type: 'string', description: 'Unit: bag or pallet (default: bag)', enum: ['bag', 'pallet'] },
           customer_name: { type: 'string', description: 'Customer name (required)' },
@@ -217,73 +230,145 @@ srv.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['query_type'],
       },
     },
+    // ── Trade Analytics (advanced) ──
     {
-      name: 'query_customs',
+      name: 'trade_price',
       description:
-        'Query Latvia customs analytics (3.8GB database). KN8 product codes, import/export trends, seasonal patterns, country analysis. ' +
-        'Supports: classifications, trends, top_commodities, country_analysis, tariff_lookup, seasonal.',
+        'Get price per tonne (EUR/kg) for any HS product code, reporter country, and year. ' +
+        'Useful for benchmarking and price comparisons across EU markets.',
       inputSchema: {
         type: 'object',
         properties: {
-          query_type: {
-            type: 'string',
-            description: 'Query type',
-            enum: ['classifications', 'trends', 'top_commodities', 'country_analysis', 'tariff_lookup', 'seasonal'],
-          },
-          q: { type: 'string', description: 'Search text for classifications (e.g., "wood")' },
-          code: { type: 'string', description: 'KN code (2-8 digits, e.g., "4401" or "44011100")' },
-          country: { type: 'string', description: '2-3 letter country code for country_analysis (e.g., "DE")' },
-          years: { type: 'string', description: 'Year range (e.g., "2020-2025")' },
-          year: { type: 'number', description: 'Single year filter' },
-          direction: { type: 'string', description: 'Trade direction', enum: ['IMPORT', 'EXPORT'] },
+          reporter: { type: 'string', description: '2-letter EU country code (e.g., "LV")' },
+          hs2: { type: 'string', description: 'HS2 product code (e.g., "44" for wood)' },
+          year: { type: 'number', description: 'Year (e.g., 2025)' },
+          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'], description: 'Trade flow' },
           limit: { type: 'number', description: 'Max results (default: 20)' },
-          sort: { type: 'string', description: 'Sort by (top_commodities only)', enum: ['value', 'weight'] },
         },
-        required: ['query_type'],
       },
     },
     {
-      name: 'list_skills',
+      name: 'trade_seasonality',
       description:
-        'List available CRM agent skills. Returns skill catalog with names, descriptions, pricing, and example tasks. ' +
-        'Available agents: oracle, spider, tracker, diplomat, sniper, strategist, finansist, gramatvedis.',
-      inputSchema: {
-        type: 'object',
-        properties: {},
-      },
-    },
-    {
-      name: 'run_skill',
-      description:
-        'Execute a CRM agent skill. Runs an AI agent (oracle, spider, etc.) with a task description and returns the analysis. ' +
-        'Requires "skill" scope API key. Execution typically takes 5-30 seconds.',
+        'Monthly import/export patterns for a country and product. Shows seasonal peaks and troughs.',
       inputSchema: {
         type: 'object',
         properties: {
-          agent: {
-            type: 'string',
-            description: 'Agent to run',
-            enum: ['oracle', 'spider', 'tracker', 'diplomat', 'sniper', 'strategist', 'finansist', 'gramatvedis'],
-          },
-          task: { type: 'string', description: 'Task description (3-2000 chars, e.g., "Analyze revenue trends last 6 months")' },
-          tenant: { type: 'string', description: 'Tenant slug (default: woodpoint)', enum: ['siltums', 'woodpoint'] },
-          format: { type: 'string', description: 'Output format', enum: ['markdown', 'json'] },
+          reporter: { type: 'string', description: '2-letter EU country code' },
+          hs2: { type: 'string', description: 'HS2 product code' },
+          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
+          years: { type: 'string', description: 'Year range (e.g., "2021-2025")' },
         },
-        required: ['agent', 'task'],
+      },
+    },
+    {
+      name: 'trade_concentration',
+      description:
+        'Market concentration analysis using HHI (Herfindahl-Hirschman Index). ' +
+        'Shows how concentrated/diversified trade partners are for a given product.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          reporter: { type: 'string', description: '2-letter EU country code' },
+          hs2: { type: 'string', description: 'HS2 product code' },
+          year: { type: 'number', description: 'Year' },
+          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
+        },
+      },
+    },
+    {
+      name: 'trade_corridor',
+      description:
+        'Deep-dive into a specific bilateral trade corridor between two countries. ' +
+        'Shows timeline, top products, and trade balance.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          reporter: { type: 'string', description: 'Reporter country code' },
+          partner: { type: 'string', description: 'Partner country code' },
+          years: { type: 'string', description: 'Year range (e.g., "2020-2025")' },
+          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
+        },
+        required: ['reporter', 'partner'],
+      },
+    },
+    {
+      name: 'trade_forecast',
+      description:
+        'Simple trend-based forecast for trade volumes. Uses historical data to project future values.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          reporter: { type: 'string', description: '2-letter EU country code' },
+          hs2: { type: 'string', description: 'HS2 product code' },
+          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
+          years: { type: 'string', description: 'Historical year range' },
+        },
+      },
+    },
+    {
+      name: 'trade_alerts',
+      description:
+        'Anomaly detection in trade data — identifies significant spikes or drops in trade volumes or values.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          reporter: { type: 'string', description: '2-letter EU country code' },
+          hs2: { type: 'string', description: 'HS2 product code' },
+          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
+          year: { type: 'number', description: 'Year to check' },
+        },
+      },
+    },
+    {
+      name: 'trade_macro',
+      description:
+        'Macro-economic context for a country — GDP, population, trade openness, key indicators relevant to trade analysis.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          reporter: { type: 'string', description: '2-letter EU country code (required)' },
+          year: { type: 'number', description: 'Year' },
+        },
+        required: ['reporter'],
+      },
+    },
+    // ── EU Salary Intelligence ──
+    {
+      name: 'salary_overview',
+      description:
+        'EU salary database overview — available countries, sectors, coverage years, and record counts.',
+      inputSchema: { type: 'object', properties: {} },
+    },
+    {
+      name: 'salary_ai_risk',
+      description:
+        'AI automation exposure analysis by ISCO occupation and NACE sector. ' +
+        'Shows which jobs/sectors are most at risk of AI displacement.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sector: { type: 'string', description: 'NACE sector code or name' },
+          occupation: { type: 'string', description: 'ISCO occupation code or name' },
+          country: { type: 'string', description: '2-letter country code' },
+        },
+      },
+    },
+    {
+      name: 'salary_wages',
+      description:
+        'Latvia detailed wage data — by sector, occupation, region. Actual salary statistics from official sources.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sector: { type: 'string', description: 'Sector name or NACE code' },
+          region: { type: 'string', description: 'Region name' },
+          year: { type: 'number', description: 'Year' },
+        },
       },
     },
   ],
 }));
-
-/** Map query_customs types to REST API endpoints */
-const CUSTOMS_ENDPOINTS = {
-  classifications: { path: 'customs/classifications', params: ['q', 'code', 'limit'] },
-  trends: { path: 'customs/trends', params: ['years', 'direction', 'source'] },
-  top_commodities: { path: 'customs/top-commodities', params: ['year', 'direction', 'limit', 'sort'] },
-  country_analysis: { path: 'customs/country-analysis', params: ['country', 'years'] },
-  tariff_lookup: { path: 'customs/tariff-lookup', params: ['code'] },
-  seasonal: { path: 'customs/seasonal', params: ['code', 'years', 'direction'] },
-};
 
 /** Map query_trade types to REST API endpoints */
 const TRADE_ENDPOINTS = {
@@ -437,41 +522,96 @@ srv.setRequestHandler(CallToolRequestSchema, async (request) => {
         return textResult(data);
       }
 
-      case 'query_customs': {
-        if (!args.query_type) return errorResult('query_type is required');
-        const endpoint = CUSTOMS_ENDPOINTS[args.query_type];
-        if (!endpoint) {
-          return errorResult(
-            `Unknown query_type: ${args.query_type}. Valid: ${Object.keys(CUSTOMS_ENDPOINTS).join(', ')}`,
-          );
-        }
+      // ── Trade Analytics (advanced) ──
+      case 'trade_price': {
         const params = {};
-        for (const key of endpoint.params) {
-          if (args[key] !== undefined && args[key] !== null) {
-            params[key] = args[key];
-          }
-        }
-        const data = await client.get(endpoint.path, params);
+        if (args.reporter) params.reporter = args.reporter;
+        if (args.hs2) params.hs2 = args.hs2;
+        if (args.year) params.year = args.year;
+        if (args.flow) params.flow = args.flow;
+        if (args.limit) params.limit = args.limit;
+        const data = await client.get('trade/price-per-tonne', params);
         return textResult(data);
       }
 
-      case 'list_skills': {
-        const data = await client.get('skills/catalog');
+      case 'trade_seasonality': {
+        const params = {};
+        if (args.reporter) params.reporter = args.reporter;
+        if (args.hs2) params.hs2 = args.hs2;
+        if (args.flow) params.flow = args.flow;
+        if (args.years) params.years = args.years;
+        const data = await client.get('trade/seasonality', params);
         return textResult(data);
       }
 
-      case 'run_skill': {
-        if (!args.agent) return errorResult('agent is required');
-        if (!args.task) return errorResult('task is required');
-        if (args.task.length < 3 || args.task.length > 2000) {
-          return errorResult('task must be 3-2000 characters');
-        }
-        const data = await client.post('skills/run', {
-          agent: args.agent,
-          task: args.task,
-          tenant: args.tenant || 'woodpoint',
-          format: args.format || 'markdown',
-        });
+      case 'trade_concentration': {
+        const params = {};
+        if (args.reporter) params.reporter = args.reporter;
+        if (args.hs2) params.hs2 = args.hs2;
+        if (args.year) params.year = args.year;
+        if (args.flow) params.flow = args.flow;
+        const data = await client.get('trade/concentration', params);
+        return textResult(data);
+      }
+
+      case 'trade_corridor': {
+        if (!args.reporter || !args.partner) return errorResult('reporter and partner are required');
+        const params = { reporter: args.reporter, partner: args.partner };
+        if (args.years) params.years = args.years;
+        if (args.flow) params.flow = args.flow;
+        const data = await client.get('trade/corridor', params);
+        return textResult(data);
+      }
+
+      case 'trade_forecast': {
+        const params = {};
+        if (args.reporter) params.reporter = args.reporter;
+        if (args.hs2) params.hs2 = args.hs2;
+        if (args.flow) params.flow = args.flow;
+        if (args.years) params.years = args.years;
+        const data = await client.get('trade/forecast', params);
+        return textResult(data);
+      }
+
+      case 'trade_alerts': {
+        const params = {};
+        if (args.reporter) params.reporter = args.reporter;
+        if (args.hs2) params.hs2 = args.hs2;
+        if (args.flow) params.flow = args.flow;
+        if (args.year) params.year = args.year;
+        const data = await client.get('trade/alerts', params);
+        return textResult(data);
+      }
+
+      case 'trade_macro': {
+        if (!args.reporter) return errorResult('reporter is required');
+        const params = { reporter: args.reporter };
+        if (args.year) params.year = args.year;
+        const data = await client.get('trade/macro-context', params);
+        return textResult(data);
+      }
+
+      // ── EU Salary Intelligence ──
+      case 'salary_overview': {
+        const data = await client.get('salary/overview');
+        return textResult(data);
+      }
+
+      case 'salary_ai_risk': {
+        const params = {};
+        if (args.sector) params.sector = args.sector;
+        if (args.occupation) params.occupation = args.occupation;
+        if (args.country) params.country = args.country;
+        const data = await client.get('salary/ai-risk', params);
+        return textResult(data);
+      }
+
+      case 'salary_wages': {
+        const params = {};
+        if (args.sector) params.sector = args.sector;
+        if (args.region) params.region = args.region;
+        if (args.year) params.year = args.year;
+        const data = await client.get('salary/lv-wages', params);
         return textResult(data);
       }
 
@@ -530,9 +670,7 @@ async function startHttpServer(port) {
     const now = Date.now();
     for (const [sid, session] of sessions) {
       if (now - session.lastAccess > SESSION_TTL_MS) {
-        session.transport.close().catch(err => {
-          console.error(`[mcp-sputnikx] Session reaper close error (${sid}):`, err.message);
-        });
+        session.transport.close().catch(() => {});
         sessions.delete(sid);
       }
     }
@@ -643,9 +781,9 @@ async function startHttpServer(port) {
   });
 
   httpServer.listen(port, () => {
-    console.error(`[mcp-sputnikx] HTTP server listening on port ${port} (Streamable HTTP)`);
-    console.error(`[mcp-sputnikx] MCP endpoint: http://localhost:${port}/mcp`);
-    console.error(`[mcp-sputnikx] CORS origin: ${CORS_ORIGIN}`);
+    console.error(`[mcp-siltums] HTTP server listening on port ${port} (Streamable HTTP)`);
+    console.error(`[mcp-siltums] MCP endpoint: http://localhost:${port}/mcp`);
+    console.error(`[mcp-siltums] CORS origin: ${CORS_ORIGIN}`);
   });
 
   // Graceful shutdown
@@ -656,7 +794,7 @@ async function startHttpServer(port) {
     );
     for (const r of results) {
       if (r.status === 'rejected') {
-        console.error('[mcp-sputnikx] Session close error:', r.reason);
+        console.error('[mcp-siltums] Session close error:', r.reason?.message);
       }
     }
     sessions.clear();
@@ -677,25 +815,24 @@ try {
     fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file://${process.argv[1]}`));
 } catch { /* bundled as CJS (e.g. Smithery) — import.meta.url undefined, skip auto-start */ }
 
-// Also auto-start when MCP_HTTP_PORT or PORT is set (e.g. via PM2, MCPize Cloud Run)
-const httpPort = parseInt(process.env.MCP_HTTP_PORT || process.env.PORT, 10);
-const validHttpPort = Number.isFinite(httpPort) && httpPort >= 1 && httpPort <= 65535;
-if (isCLI || validHttpPort) {
+// Also auto-start when MCP_HTTP_PORT is set (e.g. via PM2 ecosystem config)
+const httpPort = parseInt(process.env.MCP_HTTP_PORT, 10);
+if (isCLI || httpPort > 0) {
   (async () => {
     if (!client.configured) {
-      console.error('[mcp-sputnikx] WARNING: SPUTNIKX_API_KEY not set. Agent endpoints will fail with 401.');
-      console.error('[mcp-sputnikx] Get your API key from: https://sputnikx.xyz/admin → Settings → API Keys');
+      console.error('[mcp-siltums] WARNING: SILTUMS_API_KEY not set. Agent endpoints will fail with 401.');
+      console.error('[mcp-siltums] Get your API key from: https://siltums.sputnikx.xyz/admin → Settings → API Keys');
     }
 
-    if (validHttpPort) {
+    if (httpPort > 0) {
       await startHttpServer(httpPort);
     } else {
       const transport = new StdioServerTransport();
       await server.connect(transport);
-      console.error('[mcp-sputnikx] Server started (stdio transport)');
+      console.error('[mcp-siltums] Server started (stdio transport)');
     }
   })().catch((err) => {
-    console.error('[mcp-sputnikx] Fatal:', err.message);
+    console.error('[mcp-siltums] Fatal:', err.message);
     process.exit(1);
   });
 }
