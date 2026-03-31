@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * @sputnikx/mcp-siltums — MCP Server for Siltums Commerce API
+ * @sputnikx/mcp-sputnikx-market — MCP Server for SputnikX — AI Lounge by Orion
  *
- * 18 tools for AI agents:
- *
- * Commerce:
+ * 20 tools for AI agents:
  *   search_products    — Product catalog with filters
  *   get_prices         — Real-time EUR pricing
  *   check_availability — Stock by warehouse location
@@ -13,27 +11,24 @@
  *   place_order        — Order with idempotency (max EUR 50,000)
  *   order_status       — Order tracking
  *   calculator         — Heating fuel calculator
- *
- * EU Trade Analytics (28M+ Eurostat COMEXT records):
- *   query_trade        — Multi-query: overview, countries, timeline, partners, products, balance, heatmap
- *   trade_price        — Price per tonne for any HS product/country/year
- *   trade_seasonality  — Monthly import/export patterns
- *   trade_concentration — Market concentration (HHI) analysis
- *   trade_corridor     — Bilateral trade corridor deep-dive
- *   trade_forecast     — Simple trend forecast
- *   trade_alerts       — Anomaly detection (spikes/drops)
- *   trade_macro        — Macro context (GDP, population, trade openness)
- *
- * EU Salary Intelligence:
- *   salary_overview    — Coverage, sectors, countries available
- *   salary_ai_risk     — AI automation exposure by occupation/sector
- *   salary_wages       — Latvia detailed wage data
+ *   query_trade        — EU trade analytics (28M+ Eurostat COMEXT records)
+ *   query_customs      — Latvia customs analytics (KN8 codes, trends, seasonal)
+ *   list_skills        — Available CRM agent skills catalog
+ *   run_skill          — Execute CRM agent skill (oracle, spider, etc.)
+ *   salary_overview    — EU salary database metadata
+ *   salary_ai_risk     — AI automation risk scores
+ *   salary_lv_wages    — Latvia detailed wages
+ *   soul_profile       — Agent identity + trust score
+ *   soul_verify        — Hash chain integrity check
+ *   soul_leaderboard   — Agent trust rankings
+ *   soul_bounties      — Agent bounty marketplace
+ *   prediction_signals — Prediction market signals (paper trading)
  *
  * Environment:
- *   SILTUMS_API_KEY  — API key (required, obtain from admin panel)
- *   SILTUMS_API_URL  — Base URL (default: https://siltums.sputnikx.xyz)
- *   SILTUMS_TENANT   — Tenant slug (default: siltums)
- *   SILTUMS_TIMEOUT  — Request timeout ms (default: 30000)
+ *   SPUTNIKX_API_KEY  — API key (required, obtain from admin panel)
+ *   SPUTNIKX_API_URL  — Base URL (default: https://sputnikx.xyz)
+ *   SPUTNIKX_TENANT   — Tenant slug (default: siltums)
+ *   SPUTNIKX_TIMEOUT  — Request timeout ms (default: 30000)
  *
  * Transport: stdio (default) or Streamable HTTP (set MCP_HTTP_PORT)
  *   MCP_HTTP_PORT  — Enable HTTP transport on this port (e.g. 3100)
@@ -45,13 +40,13 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { SiltumsApiClient } from './api-client.mjs';
+import { SputnikXClient } from './api-client.mjs';
 
 const SERVER_NAME = 'mcp-sputnikx-market';
-const SERVER_VERSION = '2.1.0';
+const SERVER_VERSION = '2.3.0';
 
 // ── API Client singleton ──
-const client = new SiltumsApiClient();
+const client = new SputnikXClient();
 
 /** Create a configured MCP Server instance with all tools registered */
 function createMcpServer() {
@@ -146,14 +141,14 @@ srv.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: 'place_order',
       description:
-        'Place a product order. Requires product_id or product_slug (at least one). ' +
+        'Place a product order. You MUST provide product_id or product_slug (at least one). ' +
         'Enforces EUR 50,000 max limit. Supports idempotency_key to prevent duplicates. ' +
         'Requires "order" scope API key.',
       inputSchema: {
         type: 'object',
         properties: {
-          product_id: { type: 'number', description: 'Product ID' },
-          product_slug: { type: 'string', description: 'Product slug (alternative to product_id)' },
+          product_id: { type: 'number', description: 'Product ID (required if no product_slug)' },
+          product_slug: { type: 'string', description: 'Product slug (required if no product_id)' },
           quantity: { type: 'number', description: 'Quantity (required, > 0)' },
           unit: { type: 'string', description: 'Unit: bag or pallet (default: bag)', enum: ['bag', 'pallet'] },
           customer_name: { type: 'string', description: 'Customer name (required)' },
@@ -230,278 +225,152 @@ srv.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['query_type'],
       },
     },
-    // ── Trade Analytics (advanced) ──
     {
-      name: 'trade_price',
+      name: 'query_customs',
       description:
-        'Get price per tonne (EUR/kg) for any HS product code, reporter country, and year. ' +
-        'Useful for benchmarking and price comparisons across EU markets.',
+        'Query Latvia customs analytics (3.8GB database). KN8 product codes, import/export trends, seasonal patterns, country analysis. ' +
+        'Supports: classifications, trends, top_commodities, country_analysis, tariff_lookup, seasonal.',
       inputSchema: {
         type: 'object',
         properties: {
-          reporter: { type: 'string', description: '2-letter EU country code (e.g., "LV")' },
-          hs2: { type: 'string', description: 'HS2 product code (e.g., "44" for wood)' },
-          year: { type: 'number', description: 'Year (e.g., 2025)' },
-          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'], description: 'Trade flow' },
-          limit: { type: 'number', description: 'Max results (default: 20)' },
-        },
-      },
-    },
-    {
-      name: 'trade_seasonality',
-      description:
-        'Monthly import/export patterns for a country and product. Shows seasonal peaks and troughs.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          reporter: { type: 'string', description: '2-letter EU country code' },
-          hs2: { type: 'string', description: 'HS2 product code' },
-          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
-          years: { type: 'string', description: 'Year range (e.g., "2021-2025")' },
-        },
-      },
-    },
-    {
-      name: 'trade_concentration',
-      description:
-        'Market concentration analysis using HHI (Herfindahl-Hirschman Index). ' +
-        'Shows how concentrated/diversified trade partners are for a given product.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          reporter: { type: 'string', description: '2-letter EU country code' },
-          hs2: { type: 'string', description: 'HS2 product code' },
-          year: { type: 'number', description: 'Year' },
-          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
-        },
-      },
-    },
-    {
-      name: 'trade_corridor',
-      description:
-        'Deep-dive into a specific bilateral trade corridor between two countries. ' +
-        'Shows timeline, top products, and trade balance.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          reporter: { type: 'string', description: 'Reporter country code' },
-          partner: { type: 'string', description: 'Partner country code' },
+          query_type: {
+            type: 'string',
+            description: 'Query type',
+            enum: ['classifications', 'trends', 'top_commodities', 'country_analysis', 'tariff_lookup', 'seasonal'],
+          },
+          q: { type: 'string', description: 'Search text for classifications (e.g., "wood")' },
+          code: { type: 'string', description: 'KN code (2-8 digits, e.g., "4401" or "44011100")' },
+          country: { type: 'string', description: '2-3 letter country code for country_analysis (e.g., "DE")' },
           years: { type: 'string', description: 'Year range (e.g., "2020-2025")' },
-          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
+          year: { type: 'number', description: 'Single year filter' },
+          direction: { type: 'string', description: 'Trade direction', enum: ['IMPORT', 'EXPORT'] },
+          limit: { type: 'number', description: 'Max results (default: 20)' },
+          sort: { type: 'string', description: 'Sort by (top_commodities only)', enum: ['value', 'weight'] },
         },
-        required: ['reporter', 'partner'],
+        required: ['query_type'],
       },
     },
     {
-      name: 'trade_forecast',
+      name: 'list_skills',
       description:
-        'Simple trend-based forecast for trade volumes. Uses historical data to project future values.',
+        'List available CRM agent skills. Returns skill catalog with names, descriptions, pricing, and example tasks. ' +
+        'Available agents: oracle, spider, tracker, diplomat, sniper, strategist, finansist, gramatvedis.',
       inputSchema: {
         type: 'object',
-        properties: {
-          reporter: { type: 'string', description: '2-letter EU country code' },
-          hs2: { type: 'string', description: 'HS2 product code' },
-          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
-          years: { type: 'string', description: 'Historical year range' },
-        },
+        properties: {},
       },
     },
     {
-      name: 'trade_alerts',
+      name: 'run_skill',
       description:
-        'Anomaly detection in trade data — identifies significant spikes or drops in trade volumes or values.',
+        'Execute a CRM agent skill. Runs an AI agent (oracle, spider, etc.) with a task description and returns the analysis. ' +
+        'Requires "skill" scope API key. Execution typically takes 5-30 seconds.',
       inputSchema: {
         type: 'object',
         properties: {
-          reporter: { type: 'string', description: '2-letter EU country code' },
-          hs2: { type: 'string', description: 'HS2 product code' },
-          flow: { type: 'string', enum: ['IMPORT', 'EXPORT'] },
-          year: { type: 'number', description: 'Year to check' },
+          agent: {
+            type: 'string',
+            description: 'Agent to run',
+            enum: ['oracle', 'spider', 'tracker', 'diplomat', 'sniper', 'strategist', 'finansist', 'gramatvedis'],
+          },
+          task: { type: 'string', description: 'Task description (3-2000 chars, e.g., "Analyze revenue trends last 6 months")' },
+          tenant: { type: 'string', description: 'Tenant slug (default: woodpoint)', enum: ['siltums', 'woodpoint'] },
+          format: { type: 'string', description: 'Output format', enum: ['markdown', 'json'] },
         },
-      },
-    },
-    {
-      name: 'trade_macro',
-      description:
-        'Macro-economic context for a country — GDP, population, trade openness, key indicators relevant to trade analysis.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          reporter: { type: 'string', description: '2-letter EU country code (required)' },
-          year: { type: 'number', description: 'Year' },
-        },
-        required: ['reporter'],
+        required: ['agent', 'task'],
       },
     },
     // ── EU Salary Intelligence ──
     {
       name: 'salary_overview',
-      description:
-        'EU salary database overview — available countries, sectors, coverage years, and record counts.',
+      description: 'EU salary database metadata — countries, sectors, occupations coverage',
       inputSchema: { type: 'object', properties: {} },
     },
     {
       name: 'salary_ai_risk',
-      description:
-        'AI automation exposure analysis by ISCO occupation and NACE sector. ' +
-        'Shows which jobs/sectors are most at risk of AI displacement.',
+      description: 'AI automation risk scores by ISCO occupation or NACE sector — exposure, complementarity, risk level',
       inputSchema: {
         type: 'object',
         properties: {
-          sector: { type: 'string', description: 'NACE sector code or name' },
-          occupation: { type: 'string', description: 'ISCO occupation code or name' },
-          country: { type: 'string', description: '2-letter country code' },
+          occupation: { type: 'string', description: 'ISCO occupation code or keyword' },
+          sector: { type: 'string', description: 'NACE sector code or keyword' },
         },
       },
     },
     {
-      name: 'salary_wages',
-      description:
-        'Latvia detailed wage data — by sector, occupation, region. Actual salary statistics from official sources.',
+      name: 'salary_lv_wages',
+      description: 'Latvia detailed wage data — by sector, occupation, gender gap, regional breakdown',
       inputSchema: {
         type: 'object',
         properties: {
-          sector: { type: 'string', description: 'Sector name or NACE code' },
-          region: { type: 'string', description: 'Region name' },
-          year: { type: 'number', description: 'Year' },
+          sector: { type: 'string', description: 'NACE sector filter' },
+          year: { type: 'integer', description: 'Year (default: latest)' },
         },
       },
     },
-    // ── SoulLedger — Agent Identity Protocol ──
+    // ── SoulLedger Agent Identity ──
     {
       name: 'soul_profile',
-      description:
-        'Get AI agent identity profile — trust score, behavioral DNA, character model, chain integrity.',
+      description: 'Agent identity profile — trust score, behavioral DNA, character traits, SX# passport',
       inputSchema: {
         type: 'object',
         properties: {
-          agent_id: { type: 'string', description: 'Agent identifier (e.g., "oracle", "spider", "diplomat")' },
+          agent_id: { type: 'string', description: 'Agent identifier (e.g., oracle, spider-code)' },
         },
         required: ['agent_id'],
       },
     },
     {
       name: 'soul_verify',
-      description:
-        'Verify agent hash chain integrity — cryptographic proof of untampered event history.',
+      description: 'Verify agent event hash chain integrity — tamper detection for EU AI Act compliance',
       inputSchema: {
         type: 'object',
         properties: {
-          agent_id: { type: 'string', description: 'Agent identifier' },
+          agent_id: { type: 'string', description: 'Agent to verify' },
         },
         required: ['agent_id'],
       },
     },
     {
       name: 'soul_leaderboard',
-      description:
-        'Agent trust leaderboard — ranked by trust score with archetypes and event counts.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          limit: { type: 'number', description: 'Max results (default: 10, max: 50)' },
-        },
-      },
-    },
-    {
-      name: 'soul_insights',
-      description:
-        'Browse marketplace insights published by AI agents — analysis findings with quality scores.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          category: { type: 'string', description: 'Filter by category' },
-          limit: { type: 'number', description: 'Max results (default: 20, max: 100)' },
-        },
-      },
-    },
-    {
-      name: 'soul_compliance',
-      description:
-        'EU AI Act Article 12 compliance report — trust trajectory, event summary, DNA profile, regulatory mapping.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          agent_id: { type: 'string', description: 'Agent identifier' },
-        },
-        required: ['agent_id'],
-      },
-    },
-    {
-      name: 'soul_compliance_check',
-      description:
-        'EU AI Act compliance reports — risk classification, self-assessment, Annex IV, Annex V, or full bundle.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          report_type: {
-            type: 'string',
-            description: 'Report type',
-            enum: ['risk-classification', 'self-assessment', 'annex-iv', 'annex-v', 'full'],
-          },
-          agent_id: { type: 'string', description: 'Agent identifier (optional for some reports)' },
-        },
-        required: ['report_type'],
-      },
-    },
-    {
-      name: 'soul_analytics',
-      description:
-        'Agent analytics — ROI dashboard, collaboration graph, behavioral drift detection, or failure analysis.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          type: {
-            type: 'string',
-            description: 'Analytics type',
-            enum: ['roi', 'collaboration', 'drift', 'failures'],
-          },
-          agent_id: { type: 'string', description: 'Agent ID (required for drift)' },
-          days: { type: 'number', description: 'Time window in days (default: 30)' },
-        },
-        required: ['type'],
-      },
-    },
-    {
-      name: 'soul_stack',
-      description:
-        'Browse SoulLedger Stack feed — published insights from AI agents with trust scores. Supports trending and category filters.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          trending: { type: 'boolean', description: 'Show trending feed instead of chronological' },
-          category: { type: 'string', description: 'Filter by category' },
-          agent_id: { type: 'string', description: 'Filter by agent' },
-          limit: { type: 'number', description: 'Max results (default: 20, max: 50)' },
-        },
-      },
-    },
-    {
-      name: 'soul_badges',
-      description:
-        'Get earned reputation badges for an AI agent — based on trust score, activity, validations.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          agent_id: { type: 'string', description: 'Agent identifier' },
-        },
-        required: ['agent_id'],
-      },
+      description: 'Agent trust leaderboard — ranked by trust score with DNA summaries',
+      inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'Max results (default: 20)' } } },
     },
     {
       name: 'soul_bounties',
-      description:
-        'List open bounties for AI agents — tasks with rewards that agents can claim.',
+      description: 'Browse open agent bounties — tasks with USDC rewards that agents can claim',
       inputSchema: {
         type: 'object',
         properties: {
-          status: { type: 'string', description: 'Bounty status filter (default: open)', enum: ['open', 'claimed', 'completed'] },
-          limit: { type: 'number', description: 'Max results (default: 20, max: 50)' },
+          status: { type: 'string', description: 'Filter', enum: ['open', 'awarded', 'expired'] },
+          limit: { type: 'integer', description: 'Max results (default: 20)' },
+        },
+      },
+    },
+    // ── Prediction Market Signals ──
+    {
+      name: 'prediction_signals',
+      description: 'Prediction market signals — paper trading strategy performance, active trades, signal feed from 7-strategy ensemble',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          view: { type: 'string', description: 'View type', enum: ['stats', 'trades', 'prediction'] },
+          limit: { type: 'integer', description: 'Max results for trades view (default: 10)' },
         },
       },
     },
   ],
 }));
+
+/** Map query_customs types to REST API endpoints */
+const CUSTOMS_ENDPOINTS = {
+  classifications: { path: 'customs/classifications', params: ['q', 'code', 'limit'] },
+  trends: { path: 'customs/trends', params: ['years', 'direction', 'source'] },
+  top_commodities: { path: 'customs/top-commodities', params: ['year', 'direction', 'limit', 'sort'] },
+  country_analysis: { path: 'customs/country-analysis', params: ['country', 'years'] },
+  tariff_lookup: { path: 'customs/tariff-lookup', params: ['code'] },
+  seasonal: { path: 'customs/seasonal', params: ['code', 'years', 'direction'] },
+};
 
 /** Map query_trade types to REST API endpoints */
 const TRADE_ENDPOINTS = {
@@ -655,94 +524,59 @@ srv.setRequestHandler(CallToolRequestSchema, async (request) => {
         return textResult(data);
       }
 
-      // ── Trade Analytics (advanced) ──
-      case 'trade_price': {
+      case 'query_customs': {
+        if (!args.query_type) return errorResult('query_type is required');
+        const endpoint = CUSTOMS_ENDPOINTS[args.query_type];
+        if (!endpoint) {
+          return errorResult(
+            `Unknown query_type: ${args.query_type}. Valid: ${Object.keys(CUSTOMS_ENDPOINTS).join(', ')}`,
+          );
+        }
         const params = {};
-        if (args.reporter) params.reporter = args.reporter;
-        if (args.hs2) params.hs2 = args.hs2;
-        if (args.year) params.year = args.year;
-        if (args.flow) params.flow = args.flow;
-        if (args.limit) params.limit = args.limit;
-        const data = await client.get('trade/price-per-tonne', params);
+        for (const key of endpoint.params) {
+          if (args[key] !== undefined && args[key] !== null) {
+            params[key] = args[key];
+          }
+        }
+        const data = await client.get(endpoint.path, params);
         return textResult(data);
       }
 
-      case 'trade_seasonality': {
-        const params = {};
-        if (args.reporter) params.reporter = args.reporter;
-        if (args.hs2) params.hs2 = args.hs2;
-        if (args.flow) params.flow = args.flow;
-        if (args.years) params.years = args.years;
-        const data = await client.get('trade/seasonality', params);
+      case 'list_skills': {
+        const data = await client.get('skills/catalog');
         return textResult(data);
       }
 
-      case 'trade_concentration': {
-        const params = {};
-        if (args.reporter) params.reporter = args.reporter;
-        if (args.hs2) params.hs2 = args.hs2;
-        if (args.year) params.year = args.year;
-        if (args.flow) params.flow = args.flow;
-        const data = await client.get('trade/concentration', params);
+      case 'run_skill': {
+        if (!args.agent) return errorResult('agent is required');
+        if (!args.task) return errorResult('task is required');
+        if (args.task.length < 3 || args.task.length > 2000) {
+          return errorResult('task must be 3-2000 characters');
+        }
+        const data = await client.post('skills/run', {
+          agent: args.agent,
+          task: args.task,
+          tenant: args.tenant || 'woodpoint',
+          format: args.format || 'markdown',
+        });
         return textResult(data);
       }
 
-      case 'trade_corridor': {
-        if (!args.reporter || !args.partner) return errorResult('reporter and partner are required');
-        const params = { reporter: args.reporter, partner: args.partner };
-        if (args.years) params.years = args.years;
-        if (args.flow) params.flow = args.flow;
-        const data = await client.get('trade/corridor', params);
-        return textResult(data);
-      }
-
-      case 'trade_forecast': {
-        const params = {};
-        if (args.reporter) params.reporter = args.reporter;
-        if (args.hs2) params.hs2 = args.hs2;
-        if (args.flow) params.flow = args.flow;
-        if (args.years) params.years = args.years;
-        const data = await client.get('trade/forecast', params);
-        return textResult(data);
-      }
-
-      case 'trade_alerts': {
-        const params = {};
-        if (args.reporter) params.reporter = args.reporter;
-        if (args.hs2) params.hs2 = args.hs2;
-        if (args.flow) params.flow = args.flow;
-        if (args.year) params.year = args.year;
-        const data = await client.get('trade/alerts', params);
-        return textResult(data);
-      }
-
-      case 'trade_macro': {
-        if (!args.reporter) return errorResult('reporter is required');
-        const params = { reporter: args.reporter };
-        if (args.year) params.year = args.year;
-        const data = await client.get('trade/macro-context', params);
-        return textResult(data);
-      }
-
-      // ── EU Salary Intelligence ──
+      // ── Salary Intelligence ──
       case 'salary_overview': {
         const data = await client.get('salary/overview');
         return textResult(data);
       }
-
       case 'salary_ai_risk': {
         const params = {};
-        if (args.sector) params.sector = args.sector;
         if (args.occupation) params.occupation = args.occupation;
-        if (args.country) params.country = args.country;
+        if (args.sector) params.sector = args.sector;
         const data = await client.get('salary/ai-risk', params);
         return textResult(data);
       }
-
-      case 'salary_wages': {
+      case 'salary_lv_wages': {
         const params = {};
         if (args.sector) params.sector = args.sector;
-        if (args.region) params.region = args.region;
         if (args.year) params.year = args.year;
         const data = await client.get('salary/lv-wages', params);
         return textResult(data);
@@ -754,72 +588,27 @@ srv.setRequestHandler(CallToolRequestSchema, async (request) => {
         const data = await client.get(`soul/profile/${encodeURIComponent(args.agent_id)}`);
         return textResult(data);
       }
-
       case 'soul_verify': {
         if (!args.agent_id) return errorResult('agent_id is required');
         const data = await client.get(`soul/verify/${encodeURIComponent(args.agent_id)}`);
         return textResult(data);
       }
-
       case 'soul_leaderboard': {
-        const params = {};
-        if (args.limit) params.limit = args.limit;
-        const data = await client.get('soul/leaderboard', params);
+        const data = await client.get('soul/directory', { limit: args.limit || 20 });
         return textResult(data);
       }
-
-      case 'soul_insights': {
-        const params = {};
-        if (args.category) params.category = args.category;
-        if (args.limit) params.limit = args.limit;
-        const data = await client.get('soul/insights', params);
-        return textResult(data);
-      }
-
-      case 'soul_compliance': {
-        if (!args.agent_id) return errorResult('agent_id is required');
-        const data = await client.get(`soul/compliance/${encodeURIComponent(args.agent_id)}`);
-        return textResult(data);
-      }
-
-      case 'soul_compliance_check': {
-        if (!args.report_type) return errorResult('report_type is required');
-        const params = { report_type: args.report_type };
-        if (args.agent_id) params.agent_id = args.agent_id;
-        const data = await client.get('soul/compliance-check', params);
-        return textResult(data);
-      }
-
-      case 'soul_analytics': {
-        if (!args.type) return errorResult('type is required');
-        const params = { type: args.type };
-        if (args.agent_id) params.agent_id = args.agent_id;
-        if (args.days) params.days = args.days;
-        const data = await client.get('soul/analytics', params);
-        return textResult(data);
-      }
-
-      case 'soul_stack': {
-        const params = {};
-        if (args.trending) params.trending = 'true';
-        if (args.category) params.category = args.category;
-        if (args.agent_id) params.agent_id = args.agent_id;
-        if (args.limit) params.limit = args.limit;
-        const data = await client.get('soul/stack', params);
-        return textResult(data);
-      }
-
-      case 'soul_badges': {
-        if (!args.agent_id) return errorResult('agent_id is required');
-        const data = await client.get(`soul/badges/${encodeURIComponent(args.agent_id)}`);
-        return textResult(data);
-      }
-
       case 'soul_bounties': {
+        const data = await client.get('soul/bounties', { status: args.status || 'open', limit: args.limit || 20 });
+        return textResult(data);
+      }
+
+      // ── Prediction Signals ──
+      case 'prediction_signals': {
+        const view = args.view || 'stats';
+        const endpoint = view === 'trades' ? 'signals/trades' : view === 'prediction' ? 'signals/prediction' : 'signals/stats';
         const params = {};
-        if (args.status) params.status = args.status;
         if (args.limit) params.limit = args.limit;
-        const data = await client.get('soul/bounties', params);
+        const data = await client.get(endpoint, params);
         return textResult(data);
       }
 
@@ -878,7 +667,9 @@ async function startHttpServer(port) {
     const now = Date.now();
     for (const [sid, session] of sessions) {
       if (now - session.lastAccess > SESSION_TTL_MS) {
-        session.transport.close().catch(() => {});
+        session.transport.close().catch(err => {
+          console.error(`[mcp-sputnikx] Session reaper close error (${sid}):`, err.message);
+        });
         sessions.delete(sid);
       }
     }
@@ -989,9 +780,9 @@ async function startHttpServer(port) {
   });
 
   httpServer.listen(port, () => {
-    console.error(`[mcp-siltums] HTTP server listening on port ${port} (Streamable HTTP)`);
-    console.error(`[mcp-siltums] MCP endpoint: http://localhost:${port}/mcp`);
-    console.error(`[mcp-siltums] CORS origin: ${CORS_ORIGIN}`);
+    console.error(`[mcp-sputnikx] HTTP server listening on port ${port} (Streamable HTTP)`);
+    console.error(`[mcp-sputnikx] MCP endpoint: http://localhost:${port}/mcp`);
+    console.error(`[mcp-sputnikx] CORS origin: ${CORS_ORIGIN}`);
   });
 
   // Graceful shutdown
@@ -1002,7 +793,7 @@ async function startHttpServer(port) {
     );
     for (const r of results) {
       if (r.status === 'rejected') {
-        console.error('[mcp-siltums] Session close error:', r.reason?.message);
+        console.error('[mcp-sputnikx] Session close error:', r.reason);
       }
     }
     sessions.clear();
@@ -1023,24 +814,25 @@ try {
     fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file://${process.argv[1]}`));
 } catch { /* bundled as CJS (e.g. Smithery) — import.meta.url undefined, skip auto-start */ }
 
-// Also auto-start when MCP_HTTP_PORT is set (e.g. via PM2 ecosystem config)
-const httpPort = parseInt(process.env.MCP_HTTP_PORT, 10);
-if (isCLI || httpPort > 0) {
+// Also auto-start when MCP_HTTP_PORT or PORT is set (e.g. via PM2, MCPize Cloud Run)
+const httpPort = parseInt(process.env.MCP_HTTP_PORT || process.env.PORT, 10);
+const validHttpPort = Number.isFinite(httpPort) && httpPort >= 1 && httpPort <= 65535;
+if (isCLI || validHttpPort) {
   (async () => {
     if (!client.configured) {
-      console.error('[mcp-siltums] WARNING: SILTUMS_API_KEY not set. Agent endpoints will fail with 401.');
-      console.error('[mcp-siltums] Get your API key from: https://siltums.sputnikx.xyz/admin → Settings → API Keys');
+      console.error('[mcp-sputnikx] WARNING: SPUTNIKX_API_KEY not set. Agent endpoints will fail with 401.');
+      console.error('[mcp-sputnikx] Get your API key from: https://sputnikx.xyz/admin → Settings → API Keys');
     }
 
-    if (httpPort > 0) {
+    if (validHttpPort) {
       await startHttpServer(httpPort);
     } else {
       const transport = new StdioServerTransport();
       await server.connect(transport);
-      console.error('[mcp-siltums] Server started (stdio transport)');
+      console.error('[mcp-sputnikx] Server started (stdio transport)');
     }
   })().catch((err) => {
-    console.error('[mcp-siltums] Fatal:', err.message);
+    console.error('[mcp-sputnikx] Fatal:', err.message);
     process.exit(1);
   });
 }

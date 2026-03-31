@@ -1,8 +1,8 @@
 {
   "name": "mcp-sputnikx-market",
-  "version": "2.1.0",
+  "version": "2.3.0",
   "mcpName": "xyz.sputnikx/market",
-  "description": "Sputnik X MCP Server \u2014 28 AI agent tools: EU trade analytics (28M+ records), salary intelligence, commerce, SoulLedger agent identity (trust, DNA, compliance, badges, bounties)",
+  "description": "MCP server for SputnikX — AI Lounge by Orion. 22 tools: Fusion Engine (cross-source intelligence, 5 data sources), EU trade analytics (28M+ records, 27 countries), customs intelligence, salary data, ECB rates, SoulLedger agent identity, prediction market signals, commerce API, x402 USDC micropayments on Base chain.",
   "type": "module",
   "bin": {
     "mcp-sputnikx": "./index.mjs"
@@ -32,9 +32,11 @@
     "claude",
     "chatgpt",
     "wood-products",
-    "heating",
-    "pellets",
-    "latvia",
+    "salary",
+    "soulledger",
+    "prediction-market",
+    "x402",
+    "base-chain",
     "sputnikx"
   ],
   "author": "SputnikX <info@sputnikx.xyz>",

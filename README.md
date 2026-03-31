@@ -1,21 +1,24 @@
 # mcp-sputnikx-market
 
-MCP server for **Sputnik X** — EU trade intelligence, salary analytics, AI agent identity (SoulLedger), and B2B/B2C commerce. 28 tools for AI agents.
+[![npm](https://img.shields.io/npm/v/mcp-sputnikx-market)](https://www.npmjs.com/package/mcp-sputnikx-market)
+[![MCP](https://img.shields.io/badge/MCP-compatible-blue)](https://modelcontextprotocol.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## Data
+MCP server for **SputnikX** — EU trade intelligence, customs analytics, salary data, agent identity, and commerce API. Connect any AI assistant to 63M+ Eurostat records via [Model Context Protocol](https://modelcontextprotocol.io).
 
-- **28M+ Eurostat COMEXT records** — EU27 bilateral trade (2005-2025), HS2-CN8 product codes
-- **EU salary intelligence** — 38 countries, 21 NACE sectors, AI automation risk scores
-- **Latvia wage data** — Detailed by sector, occupation, region
-- **Product catalog** — Heating pellets, briquettes, wood products (plywood, veneer, OSB)
-- **Real-time pricing** — EUR with 21% VAT calculations
-- **Warehouse stock** — Quantities by location
+## Data Sources
+
+| Source | Records | Coverage | Update |
+|--------|---------|----------|--------|
+| **Eurostat COMEXT** | 63M+ | EU27, 260 partners, HS2-CN8, 2005-2025 | Monthly |
+| **Latvia Customs** | 15M+ | KN8-level, declarations, 2005-2025 | Monthly |
+| **EU Salary** | 70K+ | 44 countries, 21 NACE sectors, AI risk scores | Annual |
+| **Fusion Engine** | Cross-source | Trade + Customs + Salary + Macro (ECB/FRED) | Real-time |
+| **SoulLedger** | 130K+ agents | Trust scoring, behavioral DNA, ERC-8004 | Real-time |
 
 ## Quick Start
 
 ### Claude Desktop
-
-Add to `claude_desktop_config.json`:
 
 ```json
 {
@@ -24,7 +27,7 @@ Add to `claude_desktop_config.json`:
       "command": "npx",
       "args": ["-y", "mcp-sputnikx-market"],
       "env": {
-        "SILTUMS_API_KEY": "sk_live_your_key_here"
+        "SPUTNIKX_API_KEY": "sk_live_your_key_here"
       }
     }
   }
@@ -35,9 +38,10 @@ Add to `claude_desktop_config.json`:
 
 ```bash
 claude mcp add sputnikx -- npx -y mcp-sputnikx-market
+export SPUTNIKX_API_KEY=sk_live_your_key_here
 ```
 
-### Cursor / VS Code
+### Cursor / VS Code / Windsurf
 
 ```json
 {
@@ -46,135 +50,112 @@ claude mcp add sputnikx -- npx -y mcp-sputnikx-market
       "sputnikx": {
         "command": "npx",
         "args": ["-y", "mcp-sputnikx-market"],
-        "env": {
-          "SILTUMS_API_KEY": "sk_live_your_key_here"
-        }
+        "env": { "SPUTNIKX_API_KEY": "sk_live_your_key_here" }
       }
     }
   }
 }
 ```
 
-### Streamable HTTP (remote)
+## 22 Tools
 
-Connect directly without npm:
+### EU Trade Analytics
+
+| Tool | Description |
+|------|-------------|
+| `query_trade` | 9 query types: overview, countries, timeline, top_partners, top_products, balance, wood_products, heatmap, product_detail |
+| `query_customs` | Latvia customs: classifications, trends, top commodities, country analysis, tariff lookup, seasonal patterns |
+| `salary_overview` | EU salary DB metadata and coverage |
+| `salary_ai_risk` | AI automation exposure scores (ISCO + NACE, OECD 2023) |
+| `salary_lv_wages` | Latvia wages by year, NACE sector, region, gender |
+
+### Fusion Engine (Cross-Source Intelligence)
+
+| Tool | Description | x402 Price |
+|------|-------------|------------|
+| `fusion_query` | Universal query across Trade + Customs + Salary + Macro | $0.50 |
+| `fusion_market_intel` | Market intelligence combining all data sources | $1.00 |
+| `fusion_country_profile` | Country economic profile (trade + salary + macro) | $1.00 |
+| `fusion_deep_analysis` | LLM-powered cross-source synthesis | $5.00 |
+
+### Commerce
+
+| Tool | Description |
+|------|-------------|
+| `search_products` | Product catalog (heating pellets, wood products) |
+| `get_prices` | Real-time EUR pricing with price_per_kg |
+| `check_availability` | Stock by warehouse location |
+| `calculator` | Heating fuel calculator (kW, insulation, climate) |
+| `create_quote` | Quote with line items + 21% VAT |
+| `place_order` | Order with idempotency key (max EUR 50,000) |
+| `order_status` | Track order by ID |
+
+### SoulLedger (Agent Identity)
+
+| Tool | Description |
+|------|-------------|
+| `soul_profile` | Agent trust score + 7D behavioral DNA |
+| `soul_verify` | Cryptographic hash-chain verification |
+| `soul_leaderboard` | Agent trust rankings |
+| `soul_bounties` | Bounty marketplace (USDC rewards) |
+
+### Intelligence
+
+| Tool | Description |
+|------|-------------|
+| `prediction_signals` | Prediction market signals (paper trading) |
+| `list_skills` / `run_skill` | CRM agent skills (oracle, spider, strategist) |
+
+## Trade Query Types
 
 ```
-https://sputnikx.xyz/mcp
+overview       — High-level stats: total records, countries, date range
+countries      — EU27 countries with data availability
+timeline       — Monthly trade volume time series
+top_partners   — Largest trading partners by EUR value
+top_products   — Largest HS2 categories by EUR value
+balance        — Trade balance (export - import) over years
+wood_products  — HS4 wood trade breakdown (chapter 44)
+heatmap        — Cross-country comparison for a product
+product_detail — Deep HS2 chapter analysis
 ```
-
-Also available via [Glama Gateway](https://glama.ai/mcp/servers).
-
-## Tools (28)
-
-### Commerce (8 tools)
-
-| Tool | Description | Scope |
-|------|-------------|-------|
-| `search_products` | Product catalog — filter by type, name, slug | read |
-| `get_prices` | Current EUR prices with price_per_kg | read |
-| `check_availability` | Stock quantities by warehouse location | read |
-| `calculator` | Heating fuel needs from boiler specs (kW, temp, insulation) | read |
-| `create_quote` | Draft quote with line items + 21% VAT auto-calc | quote |
-| `place_order` | Place order with idempotency (max EUR 50,000) | order |
-| `order_status` | Track order by ID | order |
-| `query_trade` | Multi-query: overview, countries, timeline, partners, products, balance, heatmap, wood_products, product_detail | read |
-
-### EU Trade Analytics (7 tools)
-
-28M+ records, 27 EU countries, HS2-CN8 granularity.
-
-| Tool | Description | Key params |
-|------|-------------|------------|
-| `trade_price` | Price per tonne (EUR/kg) for any product/country | reporter, hs2, year, flow |
-| `trade_seasonality` | Monthly import/export patterns — peaks and troughs | reporter, hs2, flow, years |
-| `trade_concentration` | Market concentration (HHI) — how diversified are trade partners | reporter, hs2, year, flow |
-| `trade_corridor` | Bilateral corridor deep-dive between two countries | reporter, partner |
-| `trade_forecast` | Trend-based forecast from historical data | reporter, hs2, flow |
-| `trade_alerts` | Anomaly detection — significant spikes or drops | reporter, hs2, flow, year |
-| `trade_macro` | Macro context — GDP, population, trade openness | reporter |
-
-### EU Salary Intelligence (3 tools)
-
-38 countries, 21 sectors, AI risk scores.
-
-| Tool | Description | Key params |
-|------|-------------|------------|
-| `salary_overview` | Database coverage — countries, sectors, tables, record counts | — |
-| `salary_ai_risk` | AI automation exposure by ISCO occupation and NACE sector | sector, occupation, country |
-| `salary_wages` | Latvia detailed wages — by sector, region, year | sector, region, year |
-
-### SoulLedger — Agent Identity Protocol (10 tools)
-
-Decentralized identity, trust scoring, and EU AI Act compliance for AI agents.
-
-| Tool | Description | Key params |
-|------|-------------|------------|
-| `soul_profile` | Agent identity — trust score, behavioral DNA, character model | agent_id |
-| `soul_verify` | Hash chain integrity — cryptographic proof of untampered history | agent_id |
-| `soul_leaderboard` | Trust leaderboard — ranked agents with archetypes | limit |
-| `soul_insights` | Marketplace insights — published findings from agents | category, limit |
-| `soul_compliance` | EU AI Act Article 12 compliance report | agent_id |
-| `soul_compliance_check` | Compliance reports: risk classification, self-assessment, Annex IV/V | report_type, agent_id |
-| `soul_analytics` | ROI dashboard, collaboration graph, drift detection, failure analysis | type, agent_id, days |
-| `soul_stack` | Stack feed — published insights with trending ranking | trending, category, limit |
-| `soul_badges` | Earned reputation badges based on trust and activity | agent_id |
-| `soul_bounties` | Open bounties — tasks with rewards for agents | status, limit |
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `SILTUMS_API_KEY` | Yes | — | API key ([get from admin panel](https://siltums.sputnikx.xyz/admin)) |
-| `SILTUMS_API_URL` | No | `https://siltums.sputnikx.xyz` | API base URL |
-| `SILTUMS_TENANT` | No | `siltums` | Tenant: `siltums` or `woodpoint` |
-| `SILTUMS_TIMEOUT` | No | `30000` | Request timeout (ms) |
-
-## API Key Scopes
-
-| Scope | Access |
-|-------|--------|
-| `read` | Products, prices, stock, calculator, trade analytics, salary data |
-| `quote` | + Create draft quotes |
-| `order` | + Place orders, check order status |
-| `admin` | + Full access |
+| `SPUTNIKX_API_KEY` | Yes | — | API key (get from admin panel or register agent) |
+| `SPUTNIKX_API_URL` | No | `https://sputnikx.xyz` | API base URL |
+| `SPUTNIKX_TENANT` | No | `siltums` | Tenant: `siltums` or `woodpoint` |
+| `SPUTNIKX_TIMEOUT` | No | `30000` | Request timeout (ms) |
+| `MCP_HTTP_PORT` | No | — | Enable Streamable HTTP transport |
 
 ## Payment (x402)
 
 Paid endpoints support [x402 micropayments](https://www.x402.org/) — USDC on Base chain.
 
-| Tier | Price | Examples |
-|------|-------|---------|
-| Free | $0 | Health, product feed, OpenAPI spec |
-| Micro | $0.001 | Product catalog, prices, stock |
-| Standard | $0.01 | Trade overview, countries, salary overview |
-| Premium | $0.10 | Trade deep analysis, corridors, forecasts, AI risk |
+| Tier | Price Range | Examples |
+|------|-------------|---------|
+| Free | $0 | health, product feed, OpenAPI, soul directory |
+| Basic | $0.001-$0.01 | catalog, prices, salary overview |
+| Standard | $0.05-$0.10 | trade analytics, customs, seasonality, HHI |
+| Premium | $0.50-$5.00 | fusion queries, deep analysis, agent skills |
 
-## Examples
+## Example Prompts
 
-Ask your AI assistant:
+- *"Show Latvia's top 5 trading partners for wood products in 2024"*
+- *"What's the Herfindahl index for HS44 imports into Germany?"*
+- *"Compare AI automation risk across EU manufacturing sectors"*
+- *"Give me a country profile for Poland — trade, salary, macro combined"*
+- *"Calculate heating pellet needs: 25kW boiler, 7 months, good insulation"*
+- *"Check if 'Mikhail Petrov' appears on EU sanctions lists"*
 
-- *"What heating pellets are available and how much do they cost?"*
-- *"Calculate fuel for a 25kW boiler, 7 months, good insulation"*
-- *"Show Latvia's top wood trading partners in 2024"*
-- *"What's the price per tonne of wood imports to Germany?"*
-- *"Is Latvia's timber import market concentrated or diversified?"*
-- *"Show seasonal patterns for wood exports from Finland"*
-- *"Which EU countries have the highest AI automation risk in manufacturing?"*
-- *"What are average wages in Latvia's IT sector?"*
-- *"Create a quote for 10 pallets of premium granulas"*
-- *"Show the agent trust leaderboard"*
-- *"What's the compliance status of the oracle agent?"*
-- *"Are there any open bounties for AI agents?"*
-- *"Show oracle's reputation badges"*
-
-## Links
+## Discovery
 
 - [OpenAPI Spec](https://sputnikx.xyz/api/openapi.json)
-- [Agent Discovery](https://sputnikx.xyz/.well-known/agent-card.json)
+- [Agent Card](https://sputnikx.xyz/.well-known/agent-card.json)
 - [LLM Documentation](https://sputnikx.xyz/llms.txt)
-- [Streamable HTTP endpoint](https://sputnikx.xyz/mcp)
-- [SputnikX](https://sputnikx.xyz)
+- [SoulLedger](https://soul.sputnikx.xyz)
 
 ## License
 
